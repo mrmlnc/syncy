@@ -10,7 +10,7 @@
 ## Install
 
 ```
-$ npm install -S syncy
+$ npm install --save syncy
 ```
 
 ## Why?

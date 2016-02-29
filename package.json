@@ -1,0 +1,67 @@
+{
+  "name": "syncy",
+  "description": "One-way synchronization of directories with glob",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": {
+    "name": "Denis Malinochkin",
+    "url": "canonium.com"
+  },
+  "repository": "mrmlnc/syncy",
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "dependencies": {
+    "array-differ": "^1.0.0",
+    "chalk": "^1.1.1",
+    "cp-file": "^3.1.0",
+    "glob-parent": "^2.0.0",
+    "globby": "^4.0.0",
+    "mkdirp": "^0.5.1",
+    "object-assign": "^4.0.1",
+    "promise": "^7.1.1",
+    "rimraf": "^2.5.2",
+    "through2": "^2.0.1"
+  },
+  "devDependencies": {
+    "mocha": "^2.4.5",
+    "xo": "^0.10.1"
+  },
+  "scripts": {
+    "test": "rimraf .tmp && xo && mocha --timeout=25000"
+  },
+  "files": [
+    "lib",
+    "index.js"
+  ],
+  "keywords": [
+    "directory",
+    "dir",
+    "files",
+    "synchronization",
+    "sync",
+    "copy",
+    "update"
+  ],
+  "xo": {
+    "space": 2,
+    "rules": {
+      "object-curly-spacing": [
+        2,
+        "always"
+      ],
+      "space-before-function-paren": [
+        2,
+        "never"
+      ],
+      "arrow-parens": [
+        2,
+        "always"
+      ]
+    },
+    "envs": [
+      "node",
+      "mocha"
+    ]
+  }
+}

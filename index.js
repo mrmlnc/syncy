@@ -1,6 +1,5 @@
 'use strict';
 
-// Node.js
 var fs = require('fs');
 var through = require('through2');
 var chalk = require('chalk');
@@ -11,7 +10,6 @@ var objectAssign = require('object-assign');
 var globby = require('globby');
 var globParent = require('glob-parent');
 var cpf = require('cp-file');
-var arrayDiffer = require('array-differ');
 
 var files = require('./lib/files');
 
@@ -67,18 +65,23 @@ var plugin = function(src, dest, options) {
             basePaths = basePaths.concat(baseDir);
           });
 
-          // Compute path to source directory for each file
-          results[1] = results[1].map(function(destPath) {
-            return files.fromDestToSrcPath(destPath, dest, opts);
-          });
-
           // Search unique files to the destination directory
           // To files in the source directory are added paths to basic directories
-          results[1] = arrayDiffer(results[1], results[0].concat(basePaths));
+          var fullSourcePaths = results[0].concat(basePaths);
+          results[1] = results[1].filter(function(filepath) {
+            var fullpath = files.fromDestToSrcPath(filepath, dest, opts);
+            for (var i = 0; i < fullSourcePaths.length; i++) {
+              if (fullSourcePaths[i].indexOf(fullpath) + 1) {
+                return false;
+              }
+            }
+
+            return true;
+          });
 
           // Creating promises to delete files
           results[1] = results[1].map(function(destPath) {
-            var fullpath = files.fromSrcToDestPath(destPath, dest, opts);
+            var fullpath = files.fromSrcToDestPath(destPath, dest, {});
             return rimrafP(fullpath, { glob: false })
               .then(log(chalk.red('Removing: ') + fullpath))
               .catch(function(err) {

@@ -17,6 +17,7 @@ var recurseReadDir = function(root, files, prefix) {
   if (!existsSync(dir)) {
     return files;
   }
+
   if (fs.statSync(dir).isDirectory()) {
     fs.readdirSync(dir).forEach(function(name) {
       recurseReadDir(root, files, path.join(prefix, name));
@@ -126,6 +127,24 @@ describe('Updating files', function() {
         syncy(['.tmp/fixtures_backup/**'], '.tmp/update_src')
           .on('end', function() {
             var result = recurseReadDir('.tmp/update_src');
+            assert.equal(result.length, 7);
+            done();
+          })
+          .end();
+      })
+      .end();
+  });
+
+  it('Remove file in `src` (with `**/*` pattern)', function(done) {
+    // Backup test files
+    copyRecursiveSync('test/fixtures', '.tmp/fixtures_backup_issue_1');
+    syncy(['.tmp/fixtures_backup_issue_1/**/*.txt'], '.tmp/issue_1')
+      .on('end', function() {
+        // Remove one file in the source directory
+        fs.unlinkSync('.tmp/fixtures_backup_issue_1/folder-1/test.txt');
+        syncy(['.tmp/fixtures_backup_issue_1/**/*.txt'], '.tmp/issue_1')
+          .on('end', function() {
+            var result = recurseReadDir('.tmp/issue_1');
             assert.equal(result.length, 7);
             done();
           })

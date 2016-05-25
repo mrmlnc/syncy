@@ -17,7 +17,7 @@ var plugin = function(src, dest, options) {
   var opts = objectAssign({
     updateAndDelete: true,
     verbose: false,
-    ignoreInDest: false
+    ignoreInDest: []
   }, options);
 
   return through.obj(function(file, encoding, cb) {
@@ -50,7 +50,7 @@ var plugin = function(src, dest, options) {
         cwd: dest,
         dot: true,
         nosort: true,
-        ignore: opts.ignoreInDest
+        ignore: Array.isArray(opts.ignoreInDest) ? opts.ignoreInDest : [opts.ignoreInDest]
       })
     ];
 

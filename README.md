@@ -10,7 +10,7 @@
 ## Install
 
 ```
-$ npm install --save syncy
+$ npm install -S syncy
 ```
 
 ## Why?
@@ -26,38 +26,6 @@ const syncy = require('syncy');
 syncy(['src/**', '!src/folder/**'], 'dest')
   .on('error', console.error)
   .end();
-```
-
-## How to work with Gulp?
-
-```js
-const gulp = require('gulp');
-const syncy = require('syncy');
-
-gulp.task('sync', () => {
-  syncy(['node_modules/gulp/**'], 'dest')
-    .on('error', console.error)
-    .end();
-});
-```
-
-## How to work with Grunt?
-
-```js
-const syncy = require('syncy');
-
-module.exports = (grunt) => {
-  // Default task(s).
-  grunt.registerTask('default', function() {
-    const done = this.async();
-    syncy(['node_modules/grunt/**'], 'dest')
-      .on('error', console.error)
-      .on('end', () => {
-        done();
-      })
-      .end();
-  });
-};
 ```
 
 ## API
@@ -99,6 +67,38 @@ Plugin settings.
 }
 ```
 
+## How to work with Gulp?
+
+```js
+const gulp = require('gulp');
+const syncy = require('syncy');
+
+gulp.task('sync', () => {
+  syncy(['node_modules/gulp/**'], 'dest')
+    .on('error', console.error)
+    .end();
+});
+```
+
+## How to work with Grunt?
+
+```js
+const syncy = require('syncy');
+
+module.exports = (grunt) => {
+  // Default task(s).
+  grunt.registerTask('default', function() {
+    const done = this.async();
+    syncy(['node_modules/grunt/**'], 'dest')
+      .on('error', console.error)
+      .on('end', () => {
+        done();
+      })
+      .end();
+  });
+};
+```
+
 ## Tests
 
 **Tech specs**:
@@ -123,8 +123,8 @@ Plugin settings.
 
 ## Changelog
 
-  * **v1.0.0** (2016-02-29) — Initialization().
+See the [Releases section of our GitHub project](https://github.com/mrmlnc/syncy/releases) for changelogs for each release version.
 
 ## License
 
-MIT.
+This software is released under the terms of the MIT license.

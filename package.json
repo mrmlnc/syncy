@@ -9,7 +9,7 @@
   },
   "repository": "mrmlnc/syncy",
   "engines": {
-    "node": ">= 0.10.0"
+    "node": ">=4"
   },
   "dependencies": {
     "chalk": "1.1.3",

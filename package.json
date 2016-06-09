@@ -17,8 +17,6 @@
     "glob-parent": "2.0.0",
     "globby": "4.1.0",
     "mkdirp": "0.5.1",
-    "object-assign": "4.1.0",
-    "promise": "7.1.1",
     "rimraf": "2.5.2",
     "through2": "2.0.1"
   },

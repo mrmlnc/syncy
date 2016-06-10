@@ -107,19 +107,19 @@ module.exports = (grunt) => {
   * RAM 8GB
   * SSD (555MB/S, 530MB/S)
   * Windows 10
-  * Node.js v4.2.4
+  * Node.js v6.2.1
 
-**Files**: [AngularJS](https://github.com/angular/angular.js) from master branch (1462 files, 19368Кб)
+**Files**: [AngularJS](https://github.com/angular/angular.js/releases/tag/v1.5.6) from release v1.5.6.
 
 **Note**: `UpdateAndDelete` option is enabled in the grunt-sync, because other plugins have this option initially.
 
-| Description of tests                              | syncy | gulp-directory-sync | grunt-sync |
-|---------------------------------------------------|-------|---------------------|------------|
-| First run                                         | 2,4s  | 4,5s                | 5,8s       |
-| Re-run                                            | 0,6s  | 0,8s                | 0,7s       |
-| Changed single file                               | 0,6s  | 0,8s                | 0,7s       |
-| Delete files from destination directories and run | 2,3s  | 4,5s                | 5,7s       |
-| Delete files from the source directory            | 0,5s  | 0,5s                | 0,5s       |
+| Description of tests                                 | syncy | gulp-directory-sync | grunt-sync |
+|------------------------------------------------------|-------|---------------------|------------|
+| First run                                            | 2,7s  | 6,0s                | 7,4s       |
+| Re-run                                               | 0,7s  | 0,9s                | 0,8s       |
+| Changed single file                                  | 0,7s  | 0,9s                | 0,8s       |
+| Delete `images` from destination directories and run | 0,9s  | 1,2s                | 1,4s       |
+| Delete `images` from the source directory and run    | 1,1s  | 0,7s                | 1,3s       |
 
 ## Changelog
 

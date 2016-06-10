@@ -56,177 +56,116 @@ function copyRecursiveSync(src, dest) {
   fs.writeFileSync(dest, fs.readFileSync(src));
 }
 
-describe('Default tasks', () => {
-  it('Copying', (done) => {
-    const stream = syncy(['test/fixtures/**/*'], '.tmp/glob');
+describe('Fail tests', () => {
+  it('Error: Give the source directory and destination directory', () => {
+    return syncy('test').catch((err) => {
+      assert.ok(/Give the source/.test(err));
+    });
+  });
+});
 
-    stream.on('end', () => {
+describe('Default tasks', () => {
+  it('Copying', () => {
+    return syncy(['test/fixtures/**/*'], '.tmp/glob').then(() => {
       const result = recurseReadDir('.tmp/glob');
       assert.equal(result.length, 8);
-      done();
     });
-
-    stream.end();
   });
 
-  it('Copying with base', (done) => {
-    const stream = syncy(['test/fixtures/**'], '.tmp/base', {
-      base: 'test/fixtures'
-    });
-
-    stream.on('end', () => {
-      const result = recurseReadDir('.tmp/base');
-      assert.equal(result.length, 8);
-      done();
-    });
-
-    stream.end();
+  it('Copying with base', () => {
+    return syncy(['test/fixtures/**'], '.tmp/base', { base: 'test/fixtures' })
+      .then(() => {
+        const result = recurseReadDir('.tmp/base');
+        assert.equal(result.length, 8);
+      });
   });
 
-  it('Removing files', (done) => {
+  it('Removing files', () => {
     createFiles('.tmp/remove/test/fixtures', 3);
-    const stream = syncy(['test/fixtures/**'], '.tmp/remove');
-
-    stream.on('end', () => {
+    return syncy(['test/fixtures/**'], '.tmp/remove').then(() => {
       const result = recurseReadDir('.tmp/remove');
       assert.equal(result.length, 8);
-      done();
     });
-
-    stream.end();
   });
 
-  it('Skipping files', (done) => {
-    const stream = syncy(['test/fixtures/**'], '.tmp/skip');
-
-    stream.on('end', () => {
-      syncy(['test/fixtures/**'], '.tmp/skip')
-        .on('end', () => {
-          const result = recurseReadDir('.tmp/skip');
-          assert.equal(result.length, 8);
-          done();
-        })
-        .end();
+  it('Skipping files', () => {
+    return syncy(['test/fixtures/**'], '.tmp/skip').then(() => {
+      return syncy(['test/fixtures/**'], '.tmp/skip');
+    }).then(() => {
+      const result = recurseReadDir('.tmp/skip');
+      assert.equal(result.length, 8);
     });
-
-    stream.end();
   });
 });
 
 describe('Updating files', () => {
-  it('Remove file in `dest`', (done) => {
-    const streamOne = syncy(['test/fixtures/**'], '.tmp/update_dest');
-    const streamTwo = syncy(['test/fixtures/**'], '.tmp/update_dest');
-
-    streamOne.on('end', () => {
+  it('Remove file in `dest`', () => {
+    return syncy(['test/fixtures/**'], '.tmp/update_dest').then(() => {
       // Remove one file in the destination directory
       fs.unlinkSync('.tmp/update_dest/test/fixtures/folder-1/test.txt');
-
-      streamTwo.on('end', () => {
-        const result = recurseReadDir('.tmp/update_dest');
-        assert.equal(result.length, 8);
-        done();
-      });
-
-      streamTwo.end();
+      return syncy(['test/fixtures/**'], '.tmp/update_dest');
+    }).then(() => {
+      const result = recurseReadDir('.tmp/update_dest');
+      assert.equal(result.length, 8);
     });
-
-    streamOne.end();
   });
 
-  it('Remove file in `src`', (done) => {
+  it('Remove file in `src`', () => {
     // Backup test files
     copyRecursiveSync('test/fixtures', '.tmp/fixtures_backup');
-
-    const streamOne = syncy(['.tmp/fixtures_backup/**'], '.tmp/update_src');
-    const streamTwo = syncy(['.tmp/fixtures_backup/**'], '.tmp/update_src');
-
-    streamOne.on('end', () => {
+    syncy(['.tmp/fixtures_backup/**'], '.tmp/update_src').then(() => {
       // Remove one file in the source directory
       fs.unlinkSync('.tmp/fixtures_backup/folder-1/test.txt');
-
-      streamTwo.on('end', () => {
-        const result = recurseReadDir('.tmp/update_src');
-        assert.equal(result.length, 7);
-        done();
-      });
-
-      streamTwo.end();
+      return syncy(['.tmp/fixtures_backup/**'], '.tmp/update_src');
+    }).then(() => {
+      const result = recurseReadDir('.tmp/update_src');
+      assert.equal(result.length, 7);
     });
-
-    streamOne.end();
   });
 
-  it('Remove file in `src` (with `**/*` pattern)', (done) => {
+  it('Remove file in `src` (with `**/*` pattern)', () => {
     // Backup test files
     copyRecursiveSync('test/fixtures', '.tmp/fixtures_backup_issue_1');
-
-    const streamOne = syncy(['.tmp/fixtures_backup_issue_1/**/*.txt'], '.tmp/issue_1');
-    const streamTwo = syncy(['.tmp/fixtures_backup_issue_1/**/*.txt'], '.tmp/issue_1');
-
-    streamOne.on('end', () => {
+    return syncy(['.tmp/fixtures_backup_issue_1/**/*.txt'], '.tmp/issue_1').then(() => {
       // Remove one file in the source directory
       fs.unlinkSync('.tmp/fixtures_backup_issue_1/folder-1/test.txt');
-
-      streamTwo.on('end', () => {
-        const result = recurseReadDir('.tmp/issue_1');
-        assert.equal(result.length, 7);
-        done();
-      });
-
-      streamTwo.end();
+      return syncy(['.tmp/fixtures_backup_issue_1/**/*.txt'], '.tmp/issue_1');
+    }).then(() => {
+      const result = recurseReadDir('.tmp/issue_1');
+      assert.equal(result.length, 7);
     });
-
-    streamOne.end();
   });
 
-  it('Update the contents of a file', (done) => {
+  it('Update the contents of a file', () => {
     // Backup test files
     copyRecursiveSync('test/fixtures', '.tmp/fixtures_backup');
-
-    const streamOne = syncy(['test/fixtures/**'], '.tmp/update_content', {
+    return syncy(['test/fixtures/**'], '.tmp/update_content', {
       base: 'test/fixtures'
-    });
-
-    const streamtwo = syncy(['.tmp/fixtures_backup/**'], '.tmp/update_content', {
-      base: '.tmp/fixtures_backup'
-    });
-
-    streamOne.on('end', () => {
+    }).then(() => {
       fs.writeFileSync('.tmp/fixtures_backup/folder-2/test.txt', 'test');
-
-      streamtwo.on('end', () => {
-        const data = fs.readFileSync('.tmp/update_content/folder-2/test.txt', 'utf-8');
-        assert.equal(data, 'test');
-        done();
+      return syncy(['.tmp/fixtures_backup/**'], '.tmp/update_content', {
+        base: '.tmp/fixtures_backup'
       });
-
-      streamtwo.end();
+    }).then(() => {
+      const data = fs.readFileSync('.tmp/update_content/folder-2/test.txt', 'utf-8');
+      assert.equal(data, 'test');
     });
-
-    streamOne.end();
   });
 
-  it('No update and delete files from dest (updateAndDelete)', (done) => {
+  it('No update and delete files from dest (updateAndDelete)', () => {
     createFiles('.tmp/update_nodelete/test/fixtures', 3);
-
-    const stream = syncy(['test/fixtures/**'], '.tmp/update_nodelete', {
+    return syncy(['test/fixtures/**'], '.tmp/update_nodelete', {
       updateAndDelete: false
-    });
-
-    stream.on('end', () => {
+    }).then(() => {
       const result = recurseReadDir('.tmp/update_nodelete');
       // File `test-2.txt` overwritten
       assert.equal(result.length, 10);
-      done();
     });
-
-    stream.end();
   });
 });
 
 describe('Console information', () => {
-  it('Verbose', (done) => {
+  it('Verbose', () => {
     // Hook for console output
     const clgDump = console.log;
     let stdout = '';
@@ -234,33 +173,21 @@ describe('Console information', () => {
       stdout += JSON.stringify(arguments);
     };
 
-    const stream = syncy(['test/fixtures/**'], '.tmp/verbose', {
-      verbose: true
-    });
-
-    stream.on('end', () => {
+    return syncy(['test/fixtures/**'], '.tmp/verbose', { verbose: true }).then(() => {
       console.log = clgDump;
       assert.equal(/test\/fixtures\/test-2.txt/.test(stdout), true);
-      done();
     });
-
-    stream.end();
   });
 });
 
 describe('Ignore files', () => {
-  it('Ignore `test-0.txt` in dest directory (ignoreInDest)', (done) => {
+  it('Ignore `test-0.txt` in dest directory (ignoreInDest)', () => {
     createFiles('.tmp/single_ignore/test/fixtures', 1);
-    const stream = syncy(['test/fixtures/**'], '.tmp/single_ignore', {
+    return syncy(['test/fixtures/**'], '.tmp/single_ignore', {
       ignoreInDest: '**/test-0.txt'
-    });
-
-    stream.on('end', () => {
+    }).then(() => {
       const result = recurseReadDir('.tmp/single_ignore');
       assert.equal(result.length, 9);
-      done();
     });
-
-    stream.end();
   });
 });

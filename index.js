@@ -1,7 +1,6 @@
 'use strict';
 
 const fs = require('fs');
-const through = require('through2');
 const chalk = require('chalk');
 const rimraf = require('rimraf');
 const globby = require('globby');
@@ -41,17 +40,13 @@ function m(src, dest, options) {
     ignoreInDest: []
   }, options);
 
-  return through.obj(function(file, encoding, cb) {
-    this.push(file);
-    cb();
-  }, function(cb) {
+  return new Promise((resolve, reject) => {
     if (!src || !dest) {
-      this.emit('error', 'Give the source directory and destination directory');
-      return cb();
+      reject('Give the source directory and destination directory');
     }
 
     // If `verbose` mode is enabled
-    const log = (opts.verbose) ? console.log : function() {};
+    const log = (opts.verbose) ? console.log : function() { };
 
     // Remove latest slash for base path
     if (opts.base && opts.base.slice(-1) === '/') {
@@ -105,8 +100,7 @@ function m(src, dest, options) {
             return rimrafP(fullpath, { glob: false })
               .then(log(chalk.red('Removing: ') + fullpath))
               .catch((err) => {
-                this.emit('error', `Cannot remove '${fullpath}': ${err.code}`);
-                return cb();
+                reject(`Cannot remove '${fullpath}': ${err.code}`);
               });
           });
         }
@@ -127,22 +121,13 @@ function m(src, dest, options) {
               // Display log messages when copying files
               .then(log(chalk.green('Copying: ') + srcPath + chalk.cyan(' -> ') + to))
               .catch((err) => {
-                this.emit('error', `'${srcPath}'' to '${to}': ${err.message}`);
-                return cb();
+                reject(`'${srcPath}'' to '${to}': ${err.message}`);
               });
           });
         });
 
         // Flatten nested array.
-        return Promise.all(results.reduce((a, b) => a.concat(b)));
-      })
-      .then(() => {
-        this.resume();
-        cb();
-      })
-      .catch((err) => {
-        this.emit('error', err);
-        return cb();
+        resolve(Promise.all(results[0].concat(results[1])));
       });
   });
 }

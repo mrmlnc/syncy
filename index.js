@@ -132,7 +132,9 @@ function m(src, dest, options) {
         });
 
         // Flatten nested array.
-        resolve(Promise.all(results[0].concat(results[1])));
+        Promise.all(results[0].concat(results[1]))
+          .then(resolve)
+          .catch(reject);
       });
   });
 }

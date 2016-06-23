@@ -10,7 +10,7 @@
 ## Install
 
 ```
-$ npm install -S syncy
+$ npm i -S syncy
 ```
 
 ## Why?
@@ -24,8 +24,10 @@ $ npm install -S syncy
 const syncy = require('syncy');
 
 syncy(['src/**', '!src/folder/**'], 'dest')
-  .on('error', console.error)
-  .end();
+  .then(() => {
+    console.log('Done!'); 
+  })
+  .catch(console.error);
 ```
 
 ## API
@@ -36,21 +38,24 @@ syncy(glob, dest, [options])
 
 #### glob
 
-Type: `array|string`
+Type: `array|string`<br>
+Default: `null`
 
 Glob pattern. Files to copy.
 
 #### dest
 
-Type: `string`
+Type: `string`<br>
+Default: `null`
 
 Destination directory.
 
 #### options
 
-Type: `object`
+Type: `object`<br>
+Default: `see options section`
 
-Plugin settings.
+Module settings.
 
 ## Options
 
@@ -73,10 +78,14 @@ Plugin settings.
 const gulp = require('gulp');
 const syncy = require('syncy');
 
-gulp.task('sync', () => {
+gulp.task('sync', (done) => {
   syncy(['node_modules/gulp/**'], 'dest')
-    .on('error', console.error)
-    .end();
+    .then(() => {
+      done();
+    })
+    .catch((err) => {
+      done(err);
+    });
 });
 ```
 
@@ -90,11 +99,12 @@ module.exports = (grunt) => {
   grunt.registerTask('default', function() {
     const done = this.async();
     syncy(['node_modules/grunt/**'], 'dest')
-      .on('error', console.error)
-      .on('end', () => {
+      .then(() => {
         done();
       })
-      .end();
+      .catch((err) => {
+        done(err);
+      });
   });
 };
 ```

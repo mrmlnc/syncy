@@ -3,6 +3,7 @@
 const fs = require('fs');
 const chalk = require('chalk');
 const rimraf = require('rimraf');
+const mkdirp = require('mkdirp');
 const globby = require('globby');
 const globParent = require('glob-parent');
 const cpf = require('cp-file');
@@ -45,6 +46,11 @@ function m(src, dest, options) {
       reject('Give the source directory and destination directory');
     }
 
+    // Globby only works with an array
+    if (!Array.isArray(src)) {
+      src = [src];
+    }
+
     // If `verbose` mode is enabled
     const log = (options.verbose) ? console.log : function() { };
 
@@ -55,7 +61,7 @@ function m(src, dest, options) {
 
     // If destination directory not exists create it
     if (!files.existsStatSync(dest)) {
-      require('mkdirp').sync(dest);
+      mkdirp.sync(dest);
     }
 
     // Settings for globby

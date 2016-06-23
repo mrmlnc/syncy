@@ -34,7 +34,7 @@ function rimrafP(filepath, options) {
 }
 
 function m(src, dest, options) {
-  const opts = Object.assign({
+  options = Object.assign({
     updateAndDelete: true,
     verbose: false,
     ignoreInDest: []
@@ -46,11 +46,11 @@ function m(src, dest, options) {
     }
 
     // If `verbose` mode is enabled
-    const log = (opts.verbose) ? console.log : function() { };
+    const log = (options.verbose) ? console.log : function() { };
 
     // Remove latest slash for base path
-    if (opts.base && opts.base.slice(-1) === '/') {
-      opts.base = opts.base.slice(0, -1);
+    if (options.base && options.base.slice(-1) === '/') {
+      options.base = options.base.slice(0, -1);
     }
 
     // If destination directory not exists create it
@@ -65,14 +65,14 @@ function m(src, dest, options) {
         cwd: dest,
         dot: true,
         nosort: true,
-        ignore: Array.isArray(opts.ignoreInDest) ? opts.ignoreInDest : [opts.ignoreInDest]
+        ignore: Array.isArray(options.ignoreInDest) ? options.ignoreInDest : [options.ignoreInDest]
       })
     ];
 
     Promise.all(globPromises)
       .then((results) => {
         // Deleting files
-        if (opts.updateAndDelete) {
+        if (options.updateAndDelete) {
           // Create a full list of the basic directories
           let basePaths = [''];
           src.forEach((srcGlob) => {
@@ -84,7 +84,7 @@ function m(src, dest, options) {
           // To files in the source directory are added paths to basic directories
           const fullSourcePaths = results[0].concat(basePaths);
           results[1] = results[1].filter((filepath) => {
-            const fullpath = files.fromDestToSrcPath(filepath, dest, opts);
+            const fullpath = files.fromDestToSrcPath(filepath, dest, options);
             for (let i = 0; i < fullSourcePaths.length; i++) {
               if (fullSourcePaths[i].indexOf(fullpath) + 1) {
                 return false;
@@ -107,14 +107,13 @@ function m(src, dest, options) {
 
         // Copying files
         results[0] = results[0].map((srcPath) => {
-          const to = files.fromSrcToDestPath(srcPath, dest, opts);
+          const to = files.fromSrcToDestPath(srcPath, dest, options);
           const statSrc = statP(srcPath);
           const statDest = statP(to).catch(() => {});
           return Promise.all([statSrc, statDest]).then((stats) => {
             // Update file?
-            if ((typeof stats[1] !== 'undefined' && !opts.updateAndDelete) ||
-              stats[0].isDirectory() || stats[1] && files.compareTime(stats[0], stats[1])) {
-              return false;
+            if (files.skipUpdate(stats[0], stats[1], options)) {
+              return;
             }
 
             return cpf(srcPath, to)

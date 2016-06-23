@@ -10,7 +10,7 @@
 ## Install
 
 ```
-$ npm install -S syncy
+$ npm i -S syncy
 ```
 
 ## Why?
@@ -24,8 +24,10 @@ $ npm install -S syncy
 const syncy = require('syncy');
 
 syncy(['src/**', '!src/folder/**'], 'dest')
-  .on('error', console.error)
-  .end();
+  .then(() => {
+    console.log('Done!'); 
+  })
+  .catch(console.error);
 ```
 
 ## API
@@ -36,21 +38,24 @@ syncy(glob, dest, [options])
 
 #### glob
 
-Type: `array|string`
+Type: `array|string`<br>
+Default: `null`
 
 Glob pattern. Files to copy.
 
 #### dest
 
-Type: `string`
+Type: `string`<br>
+Default: `null`
 
 Destination directory.
 
 #### options
 
-Type: `object`
+Type: `object`<br>
+Default: `see options section`
 
-Plugin settings.
+Module settings.
 
 ## Options
 
@@ -73,10 +78,14 @@ Plugin settings.
 const gulp = require('gulp');
 const syncy = require('syncy');
 
-gulp.task('sync', () => {
+gulp.task('sync', (done) => {
   syncy(['node_modules/gulp/**'], 'dest')
-    .on('error', console.error)
-    .end();
+    .then(() => {
+      done();
+    })
+    .catch((err) => {
+      done(err);
+    });
 });
 ```
 
@@ -90,11 +99,12 @@ module.exports = (grunt) => {
   grunt.registerTask('default', function() {
     const done = this.async();
     syncy(['node_modules/grunt/**'], 'dest')
-      .on('error', console.error)
-      .on('end', () => {
+      .then(() => {
         done();
       })
-      .end();
+      .catch((err) => {
+        done(err);
+      });
   });
 };
 ```
@@ -107,19 +117,19 @@ module.exports = (grunt) => {
   * RAM 8GB
   * SSD (555MB/S, 530MB/S)
   * Windows 10
-  * Node.js v4.2.4
+  * Node.js v6.2.1
 
-**Files**: [AngularJS](https://github.com/angular/angular.js) from master branch (1462 files, 19368Кб)
+**Files**: [AngularJS](https://github.com/angular/angular.js/releases/tag/v1.5.6) from release v1.5.6.
 
 **Note**: `UpdateAndDelete` option is enabled in the grunt-sync, because other plugins have this option initially.
 
-| Description of tests                              | syncy | gulp-directory-sync | grunt-sync |
-|---------------------------------------------------|-------|---------------------|------------|
-| First run                                         | 2,4s  | 4,5s                | 5,8s       |
-| Re-run                                            | 0,6s  | 0,8s                | 0,7s       |
-| Changed single file                               | 0,6s  | 0,8s                | 0,7s       |
-| Delete files from destination directories and run | 2,3s  | 4,5s                | 5,7s       |
-| Delete files from the source directory            | 0,5s  | 0,5s                | 0,5s       |
+| Description of tests                                 | syncy | gulp-directory-sync | grunt-sync |
+|------------------------------------------------------|-------|---------------------|------------|
+| First run                                            | 2,7s  | 6,0s                | 7,4s       |
+| Re-run                                               | 0,7s  | 0,9s                | 0,8s       |
+| Changed single file                                  | 0,7s  | 0,9s                | 0,8s       |
+| Delete `images` from destination directories and run | 0,9s  | 1,2s                | 1,4s       |
+| Delete `images` from the source directory and run    | 1,1s  | 0,7s                | 1,3s       |
 
 ## Changelog
 

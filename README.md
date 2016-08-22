@@ -65,7 +65,7 @@ Module settings.
   verbose: false,
   // The base path to be removed from the path. Default: none
   base: 'base_path'
-  // Remove all files from dest that are not found in src. Default: false
+  // Remove all files from dest that are not found in src. Default: true
   updateAndDelete: true,
   // Never remove js files from destination. Default: false
   ignoreInDest: '**/*.js'

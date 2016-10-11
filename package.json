@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "mocha": "^2.5.3",
-    "xo": "^0.16.0"
+    "xo": "^0.17.0"
   },
   "scripts": {
     "test": "rimraf .tmp && xo && mocha --timeout=25000"

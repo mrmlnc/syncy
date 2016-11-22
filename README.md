@@ -4,8 +4,6 @@
 
 [![Travis](https://img.shields.io/travis/mrmlnc/syncy.svg?style=flat-square)](https://travis-ci.org/mrmlnc/syncy)
 [![NPM version](https://img.shields.io/npm/v/syncy.svg?style=flat-square)](https://www.npmjs.com/package/syncy)
-[![devDependency Status](https://img.shields.io/david/mrmlnc/syncy.svg?style=flat-square)](https://david-dm.org/mrmlnc/syncy#info=dependencies)
-[![devDependency Status](https://img.shields.io/david/dev/mrmlnc/syncy.svg?style=flat-square)](https://david-dm.org/mrmlnc/syncy#info=devDependencies)
 
 ## Install
 
@@ -25,7 +23,7 @@ const syncy = require('syncy');
 
 syncy(['src/**', '!src/folder/**'], 'dest')
   .then(() => {
-    console.log('Done!'); 
+    console.log('Done!');
   })
   .catch(console.error);
 ```
@@ -33,36 +31,35 @@ syncy(['src/**', '!src/folder/**'], 'dest')
 ## API
 
 ```
-syncy(glob, dest, [options])
+syncy(patterns, dest, [options])
 ```
 
-#### glob
+#### patterns
 
-Type: `array|string`<br>
-Default: `null`
+  * Type: `array|string`
 
 Glob pattern. Files to copy.
 
 #### dest
 
-Type: `string`<br>
-Default: `null`
+  * Type: `string`
 
 Destination directory.
 
 #### options
 
-Type: `object`<br>
-Default: `see options section`
-
-Module settings.
-
-## Options
+  * Type: `object`
 
 ```js
 {
   // Display log messages when copying and removing files
   verbose: false,
+  // Or create your own function.
+  verbose: (stamp) {
+    // action - `copy` or `remove`
+    // to - only for `copy` action
+    console.log(stamp.action + ' | ' + stamp.from + ' | ' + stamp.to);
+  },
   // The base path to be removed from the path. Default: none
   base: 'base_path'
   // Remove all files from dest that are not found in src. Default: true
@@ -117,19 +114,18 @@ module.exports = (grunt) => {
   * RAM 8GB
   * SSD (555MB/S, 530MB/S)
   * Windows 10
-  * Node.js v6.2.1
+  * Node.js v6.4.0
 
-**Files**: [AngularJS](https://github.com/angular/angular.js/releases/tag/v1.5.6) from release v1.5.6.
+**Files**: [AngularJS](https://github.com/angular/angular.js/releases/tag/v1.6.0-rc.1) from release v1.6.0-rc.1.
 
 **Note**: `UpdateAndDelete` option is enabled in the grunt-sync, because other plugins have this option initially.
 
 | Description of tests                                 | syncy | gulp-directory-sync | grunt-sync |
 |------------------------------------------------------|-------|---------------------|------------|
-| First run                                            | 2,7s  | 6,0s                | 7,4s       |
-| Re-run                                               | 0,7s  | 0,9s                | 0,8s       |
-| Changed single file                                  | 0,7s  | 0,9s                | 0,8s       |
-| Delete `images` from destination directories and run | 0,9s  | 1,2s                | 1,4s       |
-| Delete `images` from the source directory and run    | 1,1s  | 0,7s                | 1,3s       |
+| First run                                            | 3,7s  | 9,1s                | 10,1s      |
+| Re-run                                               | 0,7s  | 1,0s                | 0,8s       |
+| Delete single file from dest directory               | 0,7s  | 0,9s                | 0,8s       |
+
 
 ## Changelog
 

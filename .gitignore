@@ -1,5 +1,11 @@
-node_modules
-npm-debug.log
-.tmp
-.idea
-typings
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Dependency directory
+node_modules/
+
+# Build directory and tempory files
+.tmp/
+out/

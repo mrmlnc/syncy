@@ -45,7 +45,7 @@
     "lint": "tslint src/**/*.ts",
     "compile": "tsc",
     "test": "rimraf .tmp && mocha out/**/*.spec.js",
-    "build": "npm run clean && npm run lint&& npm run compile && npm run test ",
-    "watch": "npm run clean && npm run lint && npm run compile -- --watch"
+    "build": "npm run clean && npm run lint && npm run compile && npm test ",
+    "watch": "npm run clean && npm run lint && npm run compile -- --sourceMap --watch"
   }
 }

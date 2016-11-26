@@ -41,7 +41,7 @@ export function removeFile(filepath: string, options: rimraf.IOptions) {
 	return new Promise((resolve, reject) => {
 		rimraf(filepath, options, (err) => {
 			if (err) {
-				reject(err);
+				return reject(err);
 			}
 
 			resolve();

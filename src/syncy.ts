@@ -40,22 +40,6 @@ export interface IOptions {
 	ignoreInDest?: string | string[];
 }
 
-function assertPatternsInput(patterns: string[], dest: string): void {
-	if (patterns.length === 0) {
-		throw new TypeError('patterns must be a string or an array of strings');
-	}
-
-	for (let i = 0; i < patterns.length; i++) {
-		if (typeof patterns[i] !== 'string' || !isGlob(patterns[i])) {
-			throw new TypeError('patterns must be a glob-pattern. See https://github.com/isaacs/node-glob#glob-primer');
-		}
-	}
-
-	if (!dest || typeof dest !== 'string') {
-		throw new TypeError('dest must be a string');
-	}
-}
-
 function getLogProvider(options: IOptions) {
 	if (typeof options.verbose === 'function') {
 		return <ILog>options.verbose;
@@ -76,59 +60,44 @@ function getLogProvider(options: IOptions) {
 	}
 }
 
-export default async function syncy(patterns: string | string[], dest: string, options?: IOptions) {
-	patterns = [].concat(patterns);
-
-	try {
-		assertPatternsInput(patterns, dest);
-	} catch (err) {
-		return Promise.reject(err);
+function assertPatternsInput(patterns: string[], dest: string): void {
+	if (patterns.length === 0) {
+		throw new TypeError('patterns must be a string or an array of strings');
 	}
 
-	options = Object.assign(<IOptions>{
-		updateAndDelete: true,
-		verbose: false,
-		ignoreInDest: []
-	}, options);
-
-	options.ignoreInDest = [].concat(options.ignoreInDest);
-
-
-	// If `verbose` mode is enabled
-	const log = getLogProvider(options);
-
-	// Remove latest slash for base path
-	if (options.base && options.base.endsWith('/')) {
-		options.base = options.base.slice(0, -1);
+	for (let i = 0; i < patterns.length; i++) {
+		if (typeof patterns[i] !== 'string' || !isGlob(patterns[i])) {
+			throw new TypeError('patterns must be a glob-pattern. See https://github.com/isaacs/node-glob#glob-primer');
+		}
 	}
 
-	// If destination directory not exists create it
-	const destExists = await io.pathExists(dest);
-	if (!destExists) {
-		await io.makeDirectory(dest);
+	if (!dest || (dest && !Array.isArray(dest) && typeof dest !== 'string')) {
+		throw new TypeError('dest must be a string or an array of strings');
 	}
+}
 
-	// Settings for globby
-	const files = await Promise.all([
-		globby(patterns, <glob.IOptions>{ dot: true, nosort: true }),
-		globby('**', <glob.IOptions>{
-			cwd: dest,
-			dot: true,
-			nosort: true,
-			ignore: options.ignoreInDest
-		})
-	]);
-
-	const sourceFiles: string[] = files[0];
-	const destFiles: string[] = files[1];
-
-	// Promises
+export async function run(patterns: string[], dest: string, sourceFiles: string[], options: IOptions, log: ILog) {
 	const arrayOfPromises: Promise<any>[] = [];
+
+	// If destination directory not exists then create it
+	await io.pathExists(dest).then((exists) => {
+		if (!exists) {
+			return io.makeDirectory(dest);
+		}
+	});
+
+	// Get files from destination directory
+	const destFiles = await globby('**', <glob.IOptions>{
+		cwd: dest,
+		dot: true,
+		nosort: true,
+		ignore: options.ignoreInDest
+	});
 
 	// Removing files from the destination directory
 	if (options.updateAndDelete) {
 		// Create a full list of the basic directories
-		let treeOfBasePaths: string[] = [''];
+		let treeOfBasePaths = [''];
 		patterns.forEach((pattern) => {
 			const parentDir = globParent(pattern);
 			const treePaths = utils.expandDirectoryTree(parentDir);
@@ -136,12 +105,14 @@ export default async function syncy(patterns: string | string[], dest: string, o
 			treeOfBasePaths = treeOfBasePaths.concat(treePaths);
 		});
 
-		const fullSourcePaths: string[] = sourceFiles.concat(treeOfBasePaths);
+		const fullSourcePaths = sourceFiles.concat(treeOfBasePaths);
 
 		// Deleting files
 		for (let i = 0; i < destFiles.length; i++) {
+			const destFile = destFiles[i];
+
 			// To files in the source directory are added paths to basic directories
-			const pathFromDestToSource = utils.pathFromDestToSource(destFiles[i], options.base);
+			const pathFromDestToSource = utils.pathFromDestToSource(destFile, options.base);
 
 			// Search unique files to the destination directory
 			let skipIteration = false;
@@ -156,11 +127,11 @@ export default async function syncy(patterns: string | string[], dest: string, o
 				continue;
 			}
 
-			const pathFromSourceToDest = utils.pathFromSourceToDest(destFiles[i], dest, null);
+			const pathFromSourceToDest = utils.pathFromSourceToDest(destFile, dest, null);
 			const removePromise = io.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
 				log(<ILogItem>{
 					action: 'remove',
-					from: destFiles[i],
+					from: destFile,
 					to: null
 				});
 			}).catch((err) => {
@@ -201,4 +172,40 @@ export default async function syncy(patterns: string | string[], dest: string, o
 	}
 
 	return Promise.all(arrayOfPromises);
+}
+
+export default async function syncy(source: string | string[], dest: string | string[], options?: IOptions) {
+	const patterns = [].concat(source);
+	const destination = [].concat(dest);
+
+	try {
+		destination.forEach((item) => {
+			assertPatternsInput(patterns, item);
+		});
+	} catch (err) {
+		return Promise.reject(err);
+	}
+
+	options = Object.assign(<IOptions>{
+		updateAndDelete: true,
+		verbose: false,
+		ignoreInDest: []
+	}, options);
+
+	options.ignoreInDest = [].concat(options.ignoreInDest);
+
+	// If `verbose` mode is enabled
+	const log = getLogProvider(options);
+
+	// Remove latest slash for base path
+	if (options.base && options.base.endsWith('/')) {
+		options.base = options.base.slice(0, -1);
+	}
+
+	return globby(patterns, <glob.IOptions>{
+		dot: true,
+		nosort: true
+	}).then((sourceFiles) => {
+		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options, log)));
+	});
 }

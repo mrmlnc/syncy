@@ -36,15 +36,15 @@ syncy(patterns, dest, [options])
 
 #### patterns
 
-  * Type: `array|string`
+  * Type: `string|string[]`
 
-Glob pattern. Files to copy.
+Glob patterns that represent files to copy
 
 #### dest
 
-  * Type: `string`
+  * Type: `string|string[]`
 
-Destination directory.
+Destination directory or directories.
 
 #### options
 

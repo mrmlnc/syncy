@@ -182,3 +182,35 @@ describe('Ignore files', () => {
 	});
 
 });
+
+describe('Multiple destination', () => {
+
+	it('multiple-0: Multiple destination directories.', () => {
+		return syncy('fixtures/**', ['.tmp/multiple-0-one', '.tmp/multiple-0-two'])
+			.then(() => Promise.all([
+				readdir('.tmp/multiple-0-one'),
+				readdir('.tmp/multiple-0-two')
+			]))
+			.then((result) => {
+				assert.equal(result[0].length + result[1].length, 16);
+			});
+	});
+
+	it('multiple-1: Remove file in both `dest` directories.', () => {
+		return syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two'])
+			// Remove one file in both destination directories
+			.then(() => Promise.all([
+				io.removeFile('.tmp/multiple-1-one/fixtures/folder-1/test.txt', { disableGlob: true }),
+				io.removeFile('.tmp/multiple-1-two/fixtures/folder-1/test.txt', { disableGlob: true })
+			]))
+			.then(() => syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two']))
+			.then(() => Promise.all([
+				readdir('.tmp/multiple-1-one'),
+				readdir('.tmp/multiple-1-two')
+			]))
+			.then((result) => {
+				assert.equal(result[0].length + result[1].length, 16);
+			});
+	});
+
+});

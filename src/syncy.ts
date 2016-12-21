@@ -5,8 +5,9 @@ import * as isGlob from 'is-glob';
 import * as globParent from 'glob-parent';
 import * as globby from 'globby';
 import * as cpf from 'cp-file';
+import * as minimatch from 'minimatch';
 
-import glob = require('glob');
+import * as glob from 'glob';
 
 import * as io from './lib/io';
 import * as utils from './lib/utils';
@@ -90,9 +91,18 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	const destFiles = await globby('**', <glob.IOptions>{
 		cwd: dest,
 		dot: true,
-		nosort: true,
-		ignore: options.ignoreInDest
+		nosort: true
 	});
+
+	// Get all the parts of a file path for excluded paths
+	const excludedFiles = (<string[]>options.ignoreInDest).reduce((ret, pattern) => {
+		return minimatch.match(destFiles, pattern, { dot: true });
+	}, []);
+
+	let partsOfExcludedFiles: string[] = [];
+	for (let i = 0; i < excludedFiles.length; i++) {
+		partsOfExcludedFiles = partsOfExcludedFiles.concat(utils.expandDirectoryTree(excludedFiles[i]));
+	}
 
 	// Removing files from the destination directory
 	if (options.updateAndDelete) {
@@ -105,7 +115,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 			treeOfBasePaths = treeOfBasePaths.concat(treePaths);
 		});
 
-		const fullSourcePaths = sourceFiles.concat(treeOfBasePaths);
+		const fullSourcePaths = sourceFiles.concat(treeOfBasePaths, partsOfExcludedFiles);
 
 		// Deleting files
 		for (let i = 0; i < destFiles.length; i++) {

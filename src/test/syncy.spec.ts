@@ -181,6 +181,15 @@ describe('Ignore files', () => {
 			});
 	});
 
+	it('ignore-1: Don\'t remove directory with ignored files', () => {
+		return createFiles('.tmp/ignore-1/fixtures/main', 1)
+			.then(() => syncy('fixtures/**', '.tmp/ignore-1', { ignoreInDest: '**/*.txt' }))
+			.then(() => readdir('.tmp/ignore-1'))
+			.then((result) => {
+				assert.equal(result.length, 9);
+			});
+	});
+
 });
 
 describe('Multiple destination', () => {

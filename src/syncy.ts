@@ -96,8 +96,8 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 
 	// Get all the parts of a file path for excluded paths
 	const excludedFiles = (<string[]>options.ignoreInDest).reduce((ret, pattern) => {
-		return minimatch.match(destFiles, pattern, { dot: true });
-	}, []);
+		return ret.concat(minimatch.match(destFiles, pattern, { dot: true }));
+	}, []).map((filepath) => utils.pathFromDestToSource(filepath, options.base));
 
 	let partsOfExcludedFiles: string[] = [];
 	for (let i = 0; i < excludedFiles.length; i++) {

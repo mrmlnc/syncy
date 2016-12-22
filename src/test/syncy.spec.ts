@@ -190,6 +190,18 @@ describe('Ignore files', () => {
 			});
 	});
 
+	it('ignore-2: Don\'t remove directory with multiple ignored files', () => {
+		return Promise.all([
+			createFiles('.tmp/ignore-2/one', 1),
+			createFiles('.tmp/ignore-2/two', 1)
+		])
+			.then(() => syncy('fixtures/**', '.tmp/ignore-2', { base: 'fixtures', ignoreInDest: ['one/**/*', 'two/**/*'] }))
+			.then(() => readdir('.tmp/ignore-2'))
+			.then((result) => {
+				assert.equal(result.length, 10);
+			});
+	});
+
 });
 
 describe('Multiple destination', () => {

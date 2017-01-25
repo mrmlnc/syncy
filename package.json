@@ -24,7 +24,7 @@
     "mocha": "^3.2.0",
     "pify": "^2.3.0",
     "recursive-readdir": "^2.1.0",
-    "tslint": "^3.15.1",
+    "tslint": "^4.4.0",
     "typescript": "^2.1.4"
   },
   "dependencies": {

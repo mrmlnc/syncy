@@ -35,7 +35,7 @@
     "is-glob": "3.1.0",
     "minimatch": "3.0.3",
     "mkpath": "1.0.0",
-    "rimraf": "2.5.4"
+    "rimraf": "2.6.0"
   },
   "files": [
     "index.js",

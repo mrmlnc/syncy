@@ -1,5 +1,7 @@
 # SyncY
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/mrmlnc/syncy.svg)](https://greenkeeper.io/)
+
 > One-way synchronization of directories with [glob](https://github.com/isaacs/node-glob).
 
 [![Travis](https://img.shields.io/travis/mrmlnc/syncy.svg?style=flat-square)](https://travis-ci.org/mrmlnc/syncy)

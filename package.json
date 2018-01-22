@@ -38,12 +38,6 @@
     "mkpath": "1.0.0",
     "rimraf": "2.5.4"
   },
-  "files": [
-    "index.js",
-    "out/syncy.js",
-    "out/syncy.d.ts",
-    "out/lib"
-  ],
   "scripts": {
     "clean": "rimraf out",
     "lint": "tslint src/**/*.ts",

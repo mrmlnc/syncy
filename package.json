@@ -12,6 +12,7 @@
     "node": ">=4.0.0"
   },
   "typings": "./out/syncy.d.ts",
+  "main": "index.js",
   "devDependencies": {
     "@types/chalk": "^0.4.31",
     "@types/glob": "^5.0.30",

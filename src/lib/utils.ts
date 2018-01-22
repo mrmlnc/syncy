@@ -21,7 +21,7 @@ export function pathFromDestToSource(destPath: string, basePath: string): string
 /**
  * Processing path to the destination directory from source directory
  */
-export function pathFromSourceToDest(sourcePath: string, destPath: string, basePath: string): string {
+export function pathFromSourceToDest(sourcePath: string, destPath: string, basePath: string | null): string {
 	if (basePath) {
 		sourcePath = path.relative(basePath, sourcePath);
 	}
@@ -49,7 +49,7 @@ export function expandDirectoryTree(filepath: string): string[] {
 /**
  * The reason to  not update the file
  */
-export function skipUpdate(source: fs.Stats, dest: fs.Stats, updateAndDelete: boolean): boolean {
+export function skipUpdate(source: fs.Stats, dest: fs.Stats | null, updateAndDelete: boolean): boolean {
 	if (dest && !updateAndDelete) {
 		return true;
 	}

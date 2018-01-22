@@ -8,7 +8,7 @@ import * as pify from 'pify';
 import * as recursiveReaddir from 'recursive-readdir';
 import * as cpf from 'cp-file';
 
-import syncy from '../syncy';
+import syncy, { ILogItem } from '../syncy';
 import * as io from '../lib/io';
 
 const readdir = pify(recursiveReaddir);
@@ -28,7 +28,7 @@ async function createFiles(filepath: string, count: number) {
 async function copyRecursive(source: string, dest: string) {
 	const files = await readdir(source);
 
-	const promises = files.map((filepath) => cpf(filepath, path.join(dest, filepath)));
+	const promises = files.map((filepath: string) => cpf(filepath, path.join(dest, filepath)));
 
 	await Promise.all(promises);
 }
@@ -161,7 +161,7 @@ describe.skip('Console information', () => {
 	it('console-1: Verbose (function)', () => {
 		let lastAction = '';
 
-		const verbose = (log) => lastAction = log.action;
+		const verbose = (log: ILogItem) => lastAction = log.action;
 
 		return syncy('fixtures/**', '.tmp/console-1', { verbose }).then(() => {
 			assert.equal(lastAction, 'copy');

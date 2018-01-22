@@ -15,7 +15,7 @@ import * as utils from './lib/utils';
 export interface ILogItem {
 	action: 'copy' | 'remove';
 	from: string;
-	to: string;
+	to: string | null;
 }
 
 export interface ILog {
@@ -85,6 +85,8 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 		if (!exists) {
 			return io.makeDirectory(dest);
 		}
+
+		return;
 	});
 
 	// Get files from destination directory
@@ -97,7 +99,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	// Get all the parts of a file path for excluded paths
 	const excludedFiles = (<string[]>options.ignoreInDest).reduce((ret, pattern) => {
 		return ret.concat(minimatch.match(destFiles, pattern, { dot: true }));
-	}, []).map((filepath) => utils.pathFromDestToSource(filepath, options.base));
+	}, [] as string[]).map((filepath) => utils.pathFromDestToSource(filepath, options.base as string as string));
 
 	let partsOfExcludedFiles: string[] = [];
 	for (let i = 0; i < excludedFiles.length; i++) {
@@ -122,7 +124,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 			const destFile = destFiles[i];
 
 			// To files in the source directory are added paths to basic directories
-			const pathFromDestToSource = utils.pathFromDestToSource(destFile, options.base);
+			const pathFromDestToSource = utils.pathFromDestToSource(destFile, options.base as string);
 
 			// Search unique files to the destination directory
 			let skipIteration = false;
@@ -155,15 +157,15 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	// Copying files
 	for (let i = 0; i < sourceFiles.length; i++) {
 		const from = sourceFiles[i];
-		const to = utils.pathFromSourceToDest(from, dest, options.base);
+		const to = utils.pathFromSourceToDest(from, dest, options.base as string);
 
 		// Get stats for source & dest file
 		const statFrom = io.statFile(from);
-		const statDest = io.statFile(to).catch((err) => null);
+		const statDest = io.statFile(to).catch(() => null);
 
 		const copyAction = Promise.all([statFrom, statDest]).then((stat) => {
 			// We should update this file?
-			if (utils.skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
+			if (utils.skipUpdate(stat[0], stat[1], options.updateAndDelete as boolean)) {
 				return;
 			}
 
@@ -185,8 +187,8 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 }
 
 export default async function syncy(source: string | string[], dest: string | string[], options?: IOptions) {
-	const patterns = [].concat(source);
-	const destination = [].concat(dest);
+	const patterns = ([] as string[]).concat(source);
+	const destination = ([] as string[]).concat(dest);
 
 	try {
 		destination.forEach((item) => {
@@ -202,7 +204,7 @@ export default async function syncy(source: string | string[], dest: string | st
 		ignoreInDest: []
 	}, options);
 
-	options.ignoreInDest = [].concat(options.ignoreInDest);
+	options.ignoreInDest = ([] as string[]).concat(options.ignoreInDest as string[]);
 
 	// If `verbose` mode is enabled
 	const log = getLogProvider(options);
@@ -216,6 +218,6 @@ export default async function syncy(source: string | string[], dest: string | st
 		dot: true,
 		nosort: true
 	}).then((sourceFiles) => {
-		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options, log)));
+		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options as IOptions, log)));
 	});
 }

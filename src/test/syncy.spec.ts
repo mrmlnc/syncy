@@ -142,7 +142,7 @@ describe('Updating files', () => {
 
 });
 
-describe('Console information', () => {
+describe.skip('Console information', () => {
 
 	it('console-0: Verbose (true)', () => {
 		// Hook for console output

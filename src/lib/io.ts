@@ -25,7 +25,7 @@ export function statFile(filepath: string): Promise<fs.Stats> {
 	});
 }
 
-export function makeDirectory(filepath: string): Promise<any> {
+export function makeDirectory(filepath: string): Promise<void> {
 	return new Promise((resolve, reject) => {
 		mkpath(filepath, (err) => {
 			if (err) {
@@ -37,7 +37,7 @@ export function makeDirectory(filepath: string): Promise<any> {
 	});
 }
 
-export function removeFile(filepath: string, options: rimraf.IOptions) {
+export function removeFile(filepath: string, options: rimraf.Options): Promise<void> {
 	return new Promise((resolve, reject) => {
 		rimraf(filepath, options, (err) => {
 			if (err) {

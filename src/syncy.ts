@@ -1,6 +1,7 @@
 'use strict';
 
-import chalk = require('chalk');
+import chalk from 'chalk';
+
 import cpf = require('cp-file');
 import globParent = require('glob-parent');
 import globby = require('globby');

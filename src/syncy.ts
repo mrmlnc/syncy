@@ -1,13 +1,13 @@
 'use strict';
 
-import * as chalk from 'chalk';
-import * as cpf from 'cp-file';
-import * as globParent from 'glob-parent';
-import * as globby from 'globby';
-import * as isGlob from 'is-glob';
-import * as minimatch from 'minimatch';
+import chalk = require('chalk');
+import cpf = require('cp-file');
+import globParent = require('glob-parent');
+import globby = require('globby');
+import isGlob = require('is-glob');
+import minimatch = require('minimatch');
 
-import * as glob from 'glob';
+import glob = require('glob');
 
 import * as io from './lib/io';
 import * as utils from './lib/utils';

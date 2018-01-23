@@ -37,7 +37,7 @@ export function makeDirectory(filepath: string): Promise<void> {
 	});
 }
 
-export function removeFile(filepath: string, options: rimraf.IOptions): Promise<void> {
+export function removeFile(filepath: string, options: rimraf.Options): Promise<void> {
 	return new Promise((resolve, reject) => {
 		rimraf(filepath, options, (err) => {
 			if (err) {

@@ -2,19 +2,27 @@
 
 > One-way synchronization of directories with [glob](https://github.com/isaacs/node-glob).
 
-[![Travis](https://img.shields.io/travis/mrmlnc/syncy.svg?style=flat-square)](https://travis-ci.org/mrmlnc/syncy)
-[![NPM version](https://img.shields.io/npm/v/syncy.svg?style=flat-square)](https://www.npmjs.com/package/syncy)
+[![Build Status](https://travis-ci.org/mrmlnc/syncy.svg?branch=master)](https://travis-ci.org/mrmlnc/syncy)
+[![Build status](https://ci.appveyor.com/api/projects/status/wgoewjpky294okam?svg=true)](https://ci.appveyor.com/project/mrmlnc/syncy)
+
+## :bulb: Highlights
+
+  * :rocket: Fast by using streams and Promises. Used [cp-file](https://github.com/sindresorhus/cp-file) and [rimraf](https://github.com/isaacs/rimraf).
+  * :beginner: User-friendly by accepting globs.
+
+## Donate
+
+If you want to thank me, or promote your Issue.
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mrmlnc)
+
+> Sorry, but I have work and support for packages requires some time after work. I will be glad of your support and PR's.
 
 ## Install
 
 ```
-$ npm i -S syncy
+$ npm install --save syncy
 ```
-
-## Why?
-
-  * Fast by using streams and Promises. Used [cp-file](https://github.com/sindresorhus/cp-file) and [rimraf](https://github.com/isaacs/rimraf).
-  * User-friendly by accepting globs.
 
 ## Usage
 

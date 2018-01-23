@@ -1,7 +1,7 @@
 'use strict';
 
-import * as fs from 'fs';
 import * as assert from 'assert';
+import * as fs from 'fs';
 
 import * as utils from '../../lib/utils';
 

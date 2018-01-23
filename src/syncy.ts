@@ -1,10 +1,10 @@
 'use strict';
 
 import * as chalk from 'chalk';
-import * as isGlob from 'is-glob';
+import * as cpf from 'cp-file';
 import * as globParent from 'glob-parent';
 import * as globby from 'globby';
-import * as cpf from 'cp-file';
+import * as isGlob from 'is-glob';
 import * as minimatch from 'minimatch';
 
 import * as glob from 'glob';
@@ -18,15 +18,13 @@ export interface ILogItem {
 	to: string | null;
 }
 
-export interface ILog {
-	(log: ILogItem): void;
-}
+export type Log = (log: ILogItem) => void;
 
 export interface IOptions {
 	/**
 	 * Display log messages when copying and removing files.
 	 */
-	verbose?: boolean | ILog;
+	verbose?: boolean | Log;
 	/**
 	 * The base path to be removed from the path.
 	 */
@@ -41,9 +39,9 @@ export interface IOptions {
 	ignoreInDest?: string | string[];
 }
 
-function getLogProvider(options: IOptions) {
+function getLogProvider(options: IOptions): Log {
 	if (typeof options.verbose === 'function') {
-		return <ILog>options.verbose;
+		return <Log>options.verbose;
 	} else if (options.verbose) {
 		return (stamp: ILogItem) => {
 			let str = '';
@@ -56,7 +54,7 @@ function getLogProvider(options: IOptions) {
 		};
 	} else {
 		return () => {
-			// silence
+			// Silence
 		};
 	}
 }
@@ -66,19 +64,20 @@ function assertPatternsInput(patterns: string[], dest: string): void {
 		throw new TypeError('patterns must be a string or an array of strings');
 	}
 
-	for (let i = 0; i < patterns.length; i++) {
-		if (typeof patterns[i] !== 'string' || !isGlob(patterns[i])) {
+	for (const pattern of patterns) {
+		if (!isGlob(pattern)) {
 			throw new TypeError('patterns must be a glob-pattern. See https://github.com/isaacs/node-glob#glob-primer');
 		}
 	}
 
+	/* tslint:disable-next-line strict-type-predicates */
 	if (!dest || (dest && !Array.isArray(dest) && typeof dest !== 'string')) {
 		throw new TypeError('dest must be a string or an array of strings');
 	}
 }
 
-export async function run(patterns: string[], dest: string, sourceFiles: string[], options: IOptions, log: ILog) {
-	const arrayOfPromises: Promise<any>[] = [];
+export async function run(patterns: string[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
+	const arrayOfPromises: Array<Promise<void>> = [];
 
 	// If destination directory not exists then create it
 	await io.pathExists(dest).then((exists) => {
@@ -102,8 +101,8 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	}, [] as string[]).map((filepath) => utils.pathFromDestToSource(filepath, options.base as string as string));
 
 	let partsOfExcludedFiles: string[] = [];
-	for (let i = 0; i < excludedFiles.length; i++) {
-		partsOfExcludedFiles = partsOfExcludedFiles.concat(utils.expandDirectoryTree(excludedFiles[i]));
+	for (const excludedFile of excludedFiles) {
+		partsOfExcludedFiles = partsOfExcludedFiles.concat(utils.expandDirectoryTree(excludedFile));
 	}
 
 	// Removing files from the destination directory
@@ -120,16 +119,14 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 		const fullSourcePaths = sourceFiles.concat(treeOfBasePaths, partsOfExcludedFiles);
 
 		// Deleting files
-		for (let i = 0; i < destFiles.length; i++) {
-			const destFile = destFiles[i];
-
+		for (const destFile of destFiles) {
 			// To files in the source directory are added paths to basic directories
 			const pathFromDestToSource = utils.pathFromDestToSource(destFile, options.base as string);
 
 			// Search unique files to the destination directory
 			let skipIteration = false;
-			for (let i = 0; i < fullSourcePaths.length; i++) {
-				if (fullSourcePaths[i].indexOf(pathFromDestToSource) !== -1) {
+			for (const fullSourcePath of fullSourcePaths) {
+				if (fullSourcePath.indexOf(pathFromDestToSource) !== -1) {
 					skipIteration = true;
 					break;
 				}
@@ -155,8 +152,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	}
 
 	// Copying files
-	for (let i = 0; i < sourceFiles.length; i++) {
-		const from = sourceFiles[i];
+	for (const from of sourceFiles) {
 		const to = utils.pathFromSourceToDest(from, dest, options.base as string);
 
 		// Get stats for source & dest file
@@ -186,7 +182,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	return Promise.all(arrayOfPromises);
 }
 
-export default async function syncy(source: string | string[], dest: string | string[], options?: IOptions) {
+export default async function syncy(source: string | string[], dest: string | string[], options?: IOptions): Promise<void[][]> {
 	const patterns = ([] as string[]).concat(source);
 	const destination = ([] as string[]).concat(dest);
 
@@ -198,26 +194,26 @@ export default async function syncy(source: string | string[], dest: string | st
 		return Promise.reject(err);
 	}
 
-	options = Object.assign(<IOptions>{
+	const opts = Object.assign(<IOptions>{
 		updateAndDelete: true,
 		verbose: false,
 		ignoreInDest: []
 	}, options);
 
-	options.ignoreInDest = ([] as string[]).concat(options.ignoreInDest as string[]);
+	opts.ignoreInDest = ([] as string[]).concat(opts.ignoreInDest as string[]);
 
 	// If `verbose` mode is enabled
-	const log = getLogProvider(options);
+	const log = getLogProvider(opts);
 
 	// Remove latest slash for base path
-	if (options.base && options.base.endsWith('/')) {
-		options.base = options.base.slice(0, -1);
+	if (opts.base && opts.base.endsWith('/')) {
+		opts.base = opts.base.slice(0, -1);
 	}
 
 	return globby(patterns, <glob.IOptions>{
 		dot: true,
 		nosort: true
 	}).then((sourceFiles) => {
-		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options as IOptions, log)));
+		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, opts as IOptions, log)));
 	});
 }

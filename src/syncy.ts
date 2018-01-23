@@ -10,35 +10,12 @@ import minimatch = require('minimatch');
 
 import glob = require('glob');
 
+import * as optionsManager from './managers/options';
+
 import * as io from './lib/io';
 import * as utils from './lib/utils';
 
-export interface ILogItem {
-	action: 'copy' | 'remove';
-	from: string;
-	to: string | null;
-}
-
-export type Log = (log: ILogItem) => void;
-
-export interface IOptions {
-	/**
-	 * Display log messages when copying and removing files.
-	 */
-	verbose?: boolean | Log;
-	/**
-	 * The base path to be removed from the path.
-	 */
-	base?: string;
-	/**
-	 * Remove all files from `dest` that are not found in `src`.
-	 */
-	updateAndDelete?: boolean;
-	/**
-	 * Never remove specified files from destination directory.
-	 */
-	ignoreInDest?: string | string[];
-}
+import { ILogItem, IOptions, IPartialOptions, Log } from './managers/options';
 
 function getLogProvider(options: IOptions): Log {
 	if (typeof options.verbose === 'function') {
@@ -99,7 +76,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	// Get all the parts of a file path for excluded paths
 	const excludedFiles = (<string[]>options.ignoreInDest).reduce((ret, pattern) => {
 		return ret.concat(minimatch.match(destFiles, pattern, { dot: true }));
-	}, [] as string[]).map((filepath) => utils.pathFromDestToSource(filepath, options.base as string as string));
+	}, [] as string[]).map((filepath) => utils.pathFromDestToSource(filepath, options.base));
 
 	let partsOfExcludedFiles: string[] = [];
 	for (const excludedFile of excludedFiles) {
@@ -122,7 +99,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 		// Deleting files
 		for (const destFile of destFiles) {
 			// To files in the source directory are added paths to basic directories
-			const pathFromDestToSource = utils.pathFromDestToSource(destFile, options.base as string);
+			const pathFromDestToSource = utils.pathFromDestToSource(destFile, options.base);
 
 			// Search unique files to the destination directory
 			let skipIteration = false;
@@ -154,7 +131,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 
 	// Copying files
 	for (const from of sourceFiles) {
-		const to = utils.pathFromSourceToDest(from, dest, options.base as string);
+		const to = utils.pathFromSourceToDest(from, dest, options.base);
 
 		// Get stats for source & dest file
 		const statFrom = io.statFile(from);
@@ -162,7 +139,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 
 		const copyAction = Promise.all([statFrom, statDest]).then((stat) => {
 			// We should update this file?
-			if (utils.skipUpdate(stat[0], stat[1], options.updateAndDelete as boolean)) {
+			if (utils.skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
 				return;
 			}
 
@@ -183,7 +160,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	return Promise.all(arrayOfPromises);
 }
 
-export default async function syncy(source: string | string[], dest: string | string[], options?: IOptions): Promise<void[][]> {
+export default async function syncy(source: string | string[], dest: string | string[], opts?: IPartialOptions): Promise<void[][]> {
 	const patterns = ([] as string[]).concat(source);
 	const destination = ([] as string[]).concat(dest);
 
@@ -195,26 +172,13 @@ export default async function syncy(source: string | string[], dest: string | st
 		return Promise.reject(err);
 	}
 
-	const opts = Object.assign(<IOptions>{
-		updateAndDelete: true,
-		verbose: false,
-		ignoreInDest: []
-	}, options);
-
-	opts.ignoreInDest = ([] as string[]).concat(opts.ignoreInDest as string[]);
-
-	// If `verbose` mode is enabled
-	const log = getLogProvider(opts);
-
-	// Remove latest slash for base path
-	if (opts.base && opts.base.endsWith('/')) {
-		opts.base = opts.base.slice(0, -1);
-	}
+	const options = optionsManager.prepare(opts);
+	const log = getLogProvider(options);
 
 	return globby(patterns, <glob.IOptions>{
 		dot: true,
 		nosort: true
 	}).then((sourceFiles) => {
-		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, opts as IOptions, log)));
+		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options, log)));
 	});
 }

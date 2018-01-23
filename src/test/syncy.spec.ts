@@ -10,7 +10,9 @@ import * as recursiveReaddir from 'recursive-readdir';
 
 import * as io from '../lib/io';
 
-import syncy, { ILogItem } from '../syncy';
+import syncy from '../syncy';
+
+import { ILogItem } from '../managers/options';
 
 const readdir = pify(recursiveReaddir);
 const writeFile = pify(fs.writeFile);

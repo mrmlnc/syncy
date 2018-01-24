@@ -12,7 +12,7 @@ import * as io from '../lib/io';
 
 import syncy from '../syncy';
 
-import { ILogItem } from '../managers/options';
+import { ILogEntry } from '../managers/log';
 
 const readdir = pify(recursiveReaddir);
 const writeFile = pify(fs.writeFile);
@@ -164,7 +164,7 @@ describe.skip('Console information', () => {
 	it('console-1: Verbose (function)', () => {
 		let lastAction = '';
 
-		const verbose = (log: ILogItem) => lastAction = log.action;
+		const verbose = (log: ILogEntry) => lastAction = log.action;
 
 		return syncy('fixtures/**', '.tmp/console-1', { verbose }).then(() => {
 			assert.equal(lastAction, 'copy');

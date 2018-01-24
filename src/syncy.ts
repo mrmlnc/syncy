@@ -1,7 +1,5 @@
 'use strict';
 
-import chalk from 'chalk';
-
 import cpf = require('cp-file');
 import globParent = require('glob-parent');
 import globby = require('globby');
@@ -10,32 +8,14 @@ import minimatch = require('minimatch');
 
 import glob = require('glob');
 
+import LogManager from './managers/log';
 import * as optionsManager from './managers/options';
 
 import * as io from './lib/io';
 import * as utils from './lib/utils';
 
-import { ILogItem, IOptions, IPartialOptions, Log } from './managers/options';
-
-function getLogProvider(options: IOptions): Log {
-	if (typeof options.verbose === 'function') {
-		return <Log>options.verbose;
-	} else if (options.verbose) {
-		return (stamp: ILogItem) => {
-			let str = '';
-			if (stamp.action === 'remove') {
-				str = chalk.red('Removing: ') + stamp.from;
-			} else if (stamp.action === 'copy') {
-				str = chalk.green('Copying: ') + stamp.from + chalk.cyan(' -> ') + stamp.to;
-			}
-			console.log(str);
-		};
-	} else {
-		return () => {
-			// Silence
-		};
-	}
-}
+import { ILogEntry, Log } from './managers/log';
+import { IOptions, IPartialOptions } from './managers/options';
 
 function assertPatternsInput(patterns: string[], dest: string): void {
 	if (patterns.length === 0) {
@@ -116,10 +96,10 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 
 			const pathFromSourceToDest = utils.pathFromSourceToDest(destFile, dest, null);
 			const removePromise = io.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
-				log(<ILogItem>{
+				log(<ILogEntry>{
 					action: 'remove',
 					from: destFile,
-					to: null
+					to: undefined
 				});
 			}).catch((err) => {
 				throw new Error(`Cannot remove '${pathFromSourceToDest}': ${err.code}`);
@@ -144,7 +124,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 			}
 
 			return cpf(from, to).then(() => {
-				log(<ILogItem>{
+				log(<ILogEntry>{
 					action: 'copy',
 					from,
 					to
@@ -173,12 +153,14 @@ export default async function syncy(source: string | string[], dest: string | st
 	}
 
 	const options = optionsManager.prepare(opts);
-	const log = getLogProvider(options);
+
+	const logManager = new LogManager(options);
+	const logger = logManager.info.bind(logManager);
 
 	return globby(patterns, <glob.IOptions>{
 		dot: true,
 		nosort: true
 	}).then((sourceFiles) => {
-		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options, log)));
+		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options, logger)));
 	});
 }

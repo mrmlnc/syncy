@@ -1,10 +1,4 @@
-export interface ILogItem {
-	action: 'copy' | 'remove';
-	from: string;
-	to: string | null;
-}
-
-export type Log = (log: ILogItem) => void;
+import { Log } from './log';
 
 export interface IOptions {
 	/**

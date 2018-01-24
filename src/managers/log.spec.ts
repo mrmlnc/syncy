@@ -55,7 +55,7 @@ describe('Managers → Logger', () => {
 		it('should do use default logger with «copy» action when the «verbose» option is enabled', () => {
 			const logger = getLogger({ verbose: true });
 
-			const expected: string = '\u001b[31mCopying: \u001b[39mfrom -> to';
+			const expected: string = 'Copying: from -> to';
 
 			const logEntry = getLogEntry();
 
@@ -69,7 +69,7 @@ describe('Managers → Logger', () => {
 		it('should do use default logger with «remove» action when the «verbose» option is enabled', () => {
 			const logger = getLogger({ verbose: true });
 
-			const expected: string = '\u001b[31mRemoving: \u001b[39mfrom';
+			const expected: string = 'Removing: from';
 
 			const logEntry = getLogEntry({ action: 'remove' });
 

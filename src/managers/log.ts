@@ -1,5 +1,3 @@
-import chalk from 'chalk';
-
 import { IOptions } from './options';
 
 export interface ILogEntry {
@@ -44,9 +42,9 @@ export default class LogManager {
 
 	private formatMessage(entry: ILogEntry): string {
 		if (entry.action === 'remove') {
-			return chalk.red('Removing: ') + entry.from;
+			return `Removing: ${entry.from}`;
 		}
 
-		return chalk.red('Copying: ') + `${entry.from} -> ${entry.to}`;
+		return `Copying: ${entry.from} -> ${entry.to}`;
 	}
 }

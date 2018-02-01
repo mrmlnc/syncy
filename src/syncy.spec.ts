@@ -10,7 +10,7 @@ import * as recursiveReaddir from 'recursive-readdir';
 
 import * as fsUtils from './utils/fs';
 
-import syncy from './syncy';
+import syncy, { compareTime, skipUpdate } from './syncy';
 
 import { ILogEntry } from './managers/log';
 
@@ -35,6 +35,88 @@ async function copyRecursive(source: string, dest: string): Promise<void> {
 
 	await Promise.all(promises);
 }
+
+describe('Utils', () => {
+
+	it('compareTime', () => {
+		assert.ok(compareTime(<fs.Stats>{ ctime: new Date(10 * 1000) }, <fs.Stats>{ ctime: new Date(100 * 1000) }));
+		assert.ok(!compareTime(<fs.Stats>{ ctime: new Date(100 * 1000) }, <fs.Stats>{ ctime: new Date(10 * 1000) }));
+	});
+
+});
+
+describe('skipUpdate', () => {
+
+	it('Skip by directory', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => true
+		};
+
+		const dest = <fs.Stats>{};
+
+		assert.ok(skipUpdate(source, dest, true));
+	});
+
+	it('No skip by directory', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => false,
+			ctime: new Date(100 * 1000)
+		};
+
+		const dest = <fs.Stats>{
+			ctime: new Date(10 * 1000)
+		};
+
+		assert.ok(!skipUpdate(source, dest, true));
+	});
+
+	it('Skip by options', () => {
+		const source = <fs.Stats>{};
+		const dest = <fs.Stats>{};
+
+		assert.ok(skipUpdate(source, dest, false));
+	});
+
+	it('No skip by options', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => false,
+			ctime: new Date(10 * 1000)
+		};
+
+		const dest = <fs.Stats>{
+			ctime: new Date(100 * 1000)
+		};
+
+		assert.ok(skipUpdate(source, dest, true));
+	});
+
+	it('Skip by time', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => false,
+			ctime: new Date(10 * 1000)
+		};
+
+		const dest = <fs.Stats>{
+			ctime: new Date(100 * 1000)
+		};
+
+		assert.ok(skipUpdate(source, dest, true));
+	});
+
+	it('No skip by time', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => false,
+			ctime: new Date(100 * 1000)
+		};
+
+		const dest = <fs.Stats>{
+			ctime: new Date(10 * 1000)
+		};
+
+		assert.ok(!skipUpdate(source, dest, true));
+	});
+
+});
 
 describe('Basic tests', () => {
 

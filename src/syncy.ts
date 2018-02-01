@@ -1,5 +1,7 @@
 'use strict';
 
+import * as fs from 'fs';
+
 import cpf = require('cp-file');
 import globParent = require('glob-parent');
 import globby = require('globby');
@@ -10,13 +12,36 @@ import glob = require('glob');
 import LogManager from './managers/log';
 import * as optionsManager from './managers/options';
 
-import * as utils from './lib/utils';
 import * as fsUtils from './utils/fs';
 import * as pathUtils from './utils/path';
 
 import { ILogEntry, Log } from './managers/log';
 import { IOptions, IPartialOptions } from './managers/options';
 import { Pattern } from './types/patterns';
+
+/**
+ * The reason to  not update the file
+ */
+export function skipUpdate(source: fs.Stats, dest: fs.Stats | null, updateAndDelete: boolean): boolean {
+	if (dest && !updateAndDelete) {
+		return true;
+	}
+	if (source.isDirectory()) {
+		return true;
+	}
+	if (dest && compareTime(source, dest)) {
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * Compare update time of two files
+ */
+export function compareTime(source: fs.Stats, dest: fs.Stats): boolean {
+	return source.ctime.getTime() < dest.ctime.getTime();
+}
 
 export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
@@ -103,7 +128,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 
 		const copyAction = Promise.all([statFrom, statDest]).then((stat) => {
 			// We should update this file?
-			if (utils.skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
+			if (skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
 				return;
 			}
 

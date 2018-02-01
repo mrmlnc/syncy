@@ -8,11 +8,11 @@ import * as cpf from 'cp-file';
 import * as pify from 'pify';
 import * as recursiveReaddir from 'recursive-readdir';
 
-import * as io from '../lib/io';
+import * as io from './lib/io';
 
-import syncy from '../syncy';
+import syncy from './syncy';
 
-import { ILogEntry } from '../managers/log';
+import { ILogEntry } from './managers/log';
 
 const readdir = pify(recursiveReaddir);
 const writeFile = pify(fs.writeFile);

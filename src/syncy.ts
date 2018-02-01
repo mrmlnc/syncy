@@ -15,8 +15,9 @@ import * as utils from './lib/utils';
 
 import { ILogEntry, Log } from './managers/log';
 import { IOptions, IPartialOptions } from './managers/options';
+import { Pattern } from './types/patterns';
 
-export async function run(patterns: string[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
+export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
 
 	// If destination directory not exists then create it
@@ -36,7 +37,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	});
 
 	// Get all the parts of a file path for excluded paths
-	const excludedFiles = (<string[]>options.ignoreInDest).reduce((ret, pattern) => {
+	const excludedFiles = (<Pattern[]>options.ignoreInDest).reduce((ret, pattern) => {
 		return ret.concat(minimatch.match(destFiles, pattern, { dot: true }));
 	}, [] as string[]).map((filepath) => utils.pathFromDestToSource(filepath, options.base));
 
@@ -122,8 +123,8 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	return Promise.all(arrayOfPromises);
 }
 
-export default async function syncy(source: string | string[], dest: string | string[], opts?: IPartialOptions): Promise<void[][]> {
-	const patterns = ([] as string[]).concat(source);
+export default async function syncy(source: Pattern | Pattern[], dest: string | string[], opts?: IPartialOptions): Promise<void[][]> {
+	const patterns = ([] as Pattern[]).concat(source);
 	const destination = ([] as string[]).concat(dest);
 
 	const options = optionsManager.prepare(opts);

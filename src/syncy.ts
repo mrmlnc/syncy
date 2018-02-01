@@ -10,8 +10,8 @@ import glob = require('glob');
 import LogManager from './managers/log';
 import * as optionsManager from './managers/options';
 
-import * as io from './lib/io';
 import * as utils from './lib/utils';
+import * as ioUtils from './utils/io';
 
 import { ILogEntry, Log } from './managers/log';
 import { IOptions, IPartialOptions } from './managers/options';
@@ -21,9 +21,9 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 	const arrayOfPromises: Array<Promise<void>> = [];
 
 	// If destination directory not exists then create it
-	await io.pathExists(dest).then((exists) => {
+	await ioUtils.pathExists(dest).then((exists) => {
 		if (!exists) {
-			return io.makeDirectory(dest);
+			return ioUtils.makeDirectory(dest);
 		}
 
 		return;
@@ -78,7 +78,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 			}
 
 			const pathFromSourceToDest = utils.pathFromSourceToDest(destFile, dest, null);
-			const removePromise = io.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
+			const removePromise = ioUtils.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
 				log(<ILogEntry>{
 					action: 'remove',
 					from: destFile,
@@ -97,8 +97,8 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 		const to = utils.pathFromSourceToDest(from, dest, options.base);
 
 		// Get stats for source & dest file
-		const statFrom = io.statFile(from);
-		const statDest = io.statFile(to).catch(() => null);
+		const statFrom = ioUtils.statFile(from);
+		const statDest = ioUtils.statFile(to).catch(() => null);
 
 		const copyAction = Promise.all([statFrom, statDest]).then((stat) => {
 			// We should update this file?

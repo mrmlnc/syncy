@@ -12,6 +12,7 @@ import * as optionsManager from './managers/options';
 
 import * as utils from './lib/utils';
 import * as ioUtils from './utils/io';
+import * as pathUtils from './utils/path';
 
 import { ILogEntry, Log } from './managers/log';
 import { IOptions, IPartialOptions } from './managers/options';
@@ -39,11 +40,11 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 	// Get all the parts of a file path for excluded paths
 	const excludedFiles = (<Pattern[]>options.ignoreInDest).reduce((ret, pattern) => {
 		return ret.concat(minimatch.match(destFiles, pattern, { dot: true }));
-	}, [] as string[]).map((filepath) => utils.pathFromDestToSource(filepath, options.base));
+	}, [] as string[]).map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base));
 
 	let partsOfExcludedFiles: string[] = [];
 	for (const excludedFile of excludedFiles) {
-		partsOfExcludedFiles = partsOfExcludedFiles.concat(utils.expandDirectoryTree(excludedFile));
+		partsOfExcludedFiles = partsOfExcludedFiles.concat(pathUtils.expandDirectoryTree(excludedFile));
 	}
 
 	// Removing files from the destination directory
@@ -52,7 +53,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 		let treeOfBasePaths = [''];
 		patterns.forEach((pattern) => {
 			const parentDir = globParent(pattern);
-			const treePaths = utils.expandDirectoryTree(parentDir);
+			const treePaths = pathUtils.expandDirectoryTree(parentDir);
 
 			treeOfBasePaths = treeOfBasePaths.concat(treePaths);
 		});
@@ -62,7 +63,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 		// Deleting files
 		for (const destFile of destFiles) {
 			// To files in the source directory are added paths to basic directories
-			const pathFromDestToSource = utils.pathFromDestToSource(destFile, options.base);
+			const pathFromDestToSource = pathUtils.pathFromDestToSource(destFile, options.base);
 
 			// Search unique files to the destination directory
 			let skipIteration = false;
@@ -77,7 +78,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 				continue;
 			}
 
-			const pathFromSourceToDest = utils.pathFromSourceToDest(destFile, dest, null);
+			const pathFromSourceToDest = pathUtils.pathFromSourceToDest(destFile, dest, null);
 			const removePromise = ioUtils.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
 				log(<ILogEntry>{
 					action: 'remove',
@@ -94,7 +95,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 
 	// Copying files
 	for (const from of sourceFiles) {
-		const to = utils.pathFromSourceToDest(from, dest, options.base);
+		const to = pathUtils.pathFromSourceToDest(from, dest, options.base);
 
 		// Get stats for source & dest file
 		const statFrom = ioUtils.statFile(from);

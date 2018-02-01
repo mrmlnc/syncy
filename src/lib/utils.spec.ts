@@ -7,25 +7,6 @@ import * as utils from './utils';
 
 describe('Utils', () => {
 
-	it('normalizePath', () => {
-		assert.ok(utils.normalizePath('test\\file.js').indexOf('\\') === -1);
-	});
-
-	it('pathFromDestToSource', () => {
-		assert.equal(utils.pathFromDestToSource('file.js', 'dest'), 'dest/file.js');
-	});
-
-	it('pathFromSourceToDest', () => {
-		assert.equal(utils.pathFromSourceToDest('src/file.js', 'dest', 'src'), 'dest/file.js');
-	});
-
-	it('expandDirectoryTree', () => {
-		const tree = utils.expandDirectoryTree('src/files/**/*.js');
-
-		assert.ok(tree.indexOf('src') !== -1);
-		assert.ok(tree.indexOf('src/files') !== -1);
-	});
-
 	it('compareTime', () => {
 		assert.ok(utils.compareTime(<fs.Stats>{ ctime: new Date(10 * 1000) }, <fs.Stats>{ ctime: new Date(100 * 1000) }));
 		assert.ok(!utils.compareTime(<fs.Stats>{ ctime: new Date(100 * 1000) }, <fs.Stats>{ ctime: new Date(10 * 1000) }));

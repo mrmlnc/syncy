@@ -3,7 +3,6 @@
 import cpf = require('cp-file');
 import globParent = require('glob-parent');
 import globby = require('globby');
-import isGlob = require('is-glob');
 import minimatch = require('minimatch');
 
 import glob = require('glob');
@@ -16,23 +15,6 @@ import * as utils from './lib/utils';
 
 import { ILogEntry, Log } from './managers/log';
 import { IOptions, IPartialOptions } from './managers/options';
-
-function assertPatternsInput(patterns: string[], dest: string): void {
-	if (patterns.length === 0) {
-		throw new TypeError('patterns must be a string or an array of strings');
-	}
-
-	for (const pattern of patterns) {
-		if (!isGlob(pattern)) {
-			throw new TypeError('patterns must be a glob-pattern. See https://github.com/isaacs/node-glob#glob-primer');
-		}
-	}
-
-	/* tslint:disable-next-line strict-type-predicates */
-	if (!dest || (dest && !Array.isArray(dest) && typeof dest !== 'string')) {
-		throw new TypeError('dest must be a string or an array of strings');
-	}
-}
 
 export async function run(patterns: string[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
@@ -143,14 +125,6 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 export default async function syncy(source: string | string[], dest: string | string[], opts?: IPartialOptions): Promise<void[][]> {
 	const patterns = ([] as string[]).concat(source);
 	const destination = ([] as string[]).concat(dest);
-
-	try {
-		destination.forEach((item) => {
-			assertPatternsInput(patterns, item);
-		});
-	} catch (err) {
-		return Promise.reject(err);
-	}
 
 	const options = optionsManager.prepare(opts);
 

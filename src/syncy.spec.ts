@@ -8,7 +8,7 @@ import * as cpf from 'cp-file';
 import * as pify from 'pify';
 import * as recursiveReaddir from 'recursive-readdir';
 
-import * as ioUtils from './utils/io';
+import * as fsUtils from './utils/fs';
 
 import syncy from './syncy';
 
@@ -20,7 +20,7 @@ const readFile = pify(fs.readFile);
 
 // Creating test files
 async function createFiles(filepath: string, count: number): Promise<void> {
-	await ioUtils.makeDirectory(filepath);
+	await fsUtils.makeDirectory(filepath);
 
 	for (let i = 0; i < count; i++) {
 		await writeFile(path.join(filepath, `test-${i}.txt`), 'test');
@@ -40,7 +40,7 @@ describe('Basic tests', () => {
 
 	it('basic-0: Should create destination directory if it does not exist.', () => {
 		return syncy('test/**/*', '.tmp/basic-0').then(() => {
-			return ioUtils.pathExists('.tmp/basic-0').then((status) => {
+			return fsUtils.pathExists('.tmp/basic-0').then((status) => {
 				assert.ok(status);
 			});
 		});
@@ -87,7 +87,7 @@ describe('Updating files', () => {
 	it('updating-0: Remove file in `dest` directory.', () => {
 		return syncy('fixtures/**', '.tmp/updating-0')
 			// Remove one file in the destination directory
-			.then(() => ioUtils.removeFile('.tmp/updating-0/fixtures/folder-1/test.txt', { disableGlob: true }))
+			.then(() => fsUtils.removeFile('.tmp/updating-0/fixtures/folder-1/test.txt', { disableGlob: true }))
 			.then(() => syncy('fixtures/**', '.tmp/updating-0'))
 			.then(() => readdir('.tmp/updating-0'))
 			.then((result) => {
@@ -100,7 +100,7 @@ describe('Updating files', () => {
 		return copyRecursive('fixtures', '.tmp/fixtures-backup')
 			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
 			// Remove one file in the source directory
-			.then(() => ioUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
+			.then(() => fsUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
 			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
 			.then(() => readdir('.tmp/updating-1'))
 			.then((result) => {
@@ -113,7 +113,7 @@ describe('Updating files', () => {
 		return copyRecursive('fixtures', '.tmp/fixtures-backup')
 			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-2'))
 			// Remove one file in the source directory
-			.then(() => ioUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
+			.then(() => fsUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
 			.then(() => syncy('.tmp/fixtures-backup/**/*.txt', '.tmp/updating-2'))
 			.then(() => readdir('.tmp/updating-2'))
 			.then((result) => {
@@ -224,8 +224,8 @@ describe('Multiple destination', () => {
 		return syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two'])
 			// Remove one file in both destination directories
 			.then(() => Promise.all([
-				ioUtils.removeFile('.tmp/multiple-1-one/fixtures/folder-1/test.txt', { disableGlob: true }),
-				ioUtils.removeFile('.tmp/multiple-1-two/fixtures/folder-1/test.txt', { disableGlob: true })
+				fsUtils.removeFile('.tmp/multiple-1-one/fixtures/folder-1/test.txt', { disableGlob: true }),
+				fsUtils.removeFile('.tmp/multiple-1-two/fixtures/folder-1/test.txt', { disableGlob: true })
 			]))
 			.then(() => syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two']))
 			.then(() => Promise.all([

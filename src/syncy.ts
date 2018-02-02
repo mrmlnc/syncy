@@ -3,11 +3,9 @@
 import * as fs from 'fs';
 
 import cpf = require('cp-file');
+import fg = require('fast-glob');
 import globParent = require('glob-parent');
-import globby = require('globby');
 import minimatch = require('minimatch');
-
-import glob = require('glob');
 
 import LogManager from './managers/log';
 import * as optionsManager from './managers/options';
@@ -44,22 +42,11 @@ export function compareTime(source: fs.Stats, dest: fs.Stats): boolean {
 }
 
 export function getDestEntries(dest: string): Promise<string[]> {
-	const options: glob.IOptions = {
-		cwd: dest,
-		dot: true,
-		nosort: true
-	};
-
-	return globby('**', options);
+	return fg<string>('**', { cwd: dest, dot: true, onlyFiles: false });
 }
 
 export function getSourceEntries(patterns: Pattern | Pattern[]): Promise<string[]> {
-	const options: glob.IOptions = {
-		dot: true,
-		nosort: true
-	};
-
-	return globby(patterns, options);
+	return fg<string>(patterns, { dot: true, onlyFiles: false });
 }
 
 /**

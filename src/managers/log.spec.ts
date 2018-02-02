@@ -7,7 +7,7 @@ import * as optionsManager from './options';
 import { IOptions, IPartialOptions } from './options';
 
 class FakeLogger extends LogManager {
-	public lastMessage: string;
+	public lastMessage: string | undefined = undefined;
 
 	public log(message: string): void {
 		this.lastMessage = message;

@@ -8,11 +8,11 @@ import * as cpf from 'cp-file';
 import * as pify from 'pify';
 import * as recursiveReaddir from 'recursive-readdir';
 
-import * as io from '../lib/io';
+import * as fsUtils from './utils/fs';
 
-import syncy from '../syncy';
+import syncy, { compareTime, skipUpdate } from './syncy';
 
-import { ILogEntry } from '../managers/log';
+import { ILogEntry } from './managers/log';
 
 const readdir = pify(recursiveReaddir);
 const writeFile = pify(fs.writeFile);
@@ -20,7 +20,7 @@ const readFile = pify(fs.readFile);
 
 // Creating test files
 async function createFiles(filepath: string, count: number): Promise<void> {
-	await io.makeDirectory(filepath);
+	await fsUtils.makeDirectory(filepath);
 
 	for (let i = 0; i < count; i++) {
 		await writeFile(path.join(filepath, `test-${i}.txt`), 'test');
@@ -36,11 +36,93 @@ async function copyRecursive(source: string, dest: string): Promise<void> {
 	await Promise.all(promises);
 }
 
+describe('Utils', () => {
+
+	it('compareTime', () => {
+		assert.ok(compareTime(<fs.Stats>{ ctime: new Date(10 * 1000) }, <fs.Stats>{ ctime: new Date(100 * 1000) }));
+		assert.ok(!compareTime(<fs.Stats>{ ctime: new Date(100 * 1000) }, <fs.Stats>{ ctime: new Date(10 * 1000) }));
+	});
+
+});
+
+describe('skipUpdate', () => {
+
+	it('Skip by directory', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => true
+		};
+
+		const dest = <fs.Stats>{};
+
+		assert.ok(skipUpdate(source, dest, true));
+	});
+
+	it('No skip by directory', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => false,
+			ctime: new Date(100 * 1000)
+		};
+
+		const dest = <fs.Stats>{
+			ctime: new Date(10 * 1000)
+		};
+
+		assert.ok(!skipUpdate(source, dest, true));
+	});
+
+	it('Skip by options', () => {
+		const source = <fs.Stats>{};
+		const dest = <fs.Stats>{};
+
+		assert.ok(skipUpdate(source, dest, false));
+	});
+
+	it('No skip by options', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => false,
+			ctime: new Date(10 * 1000)
+		};
+
+		const dest = <fs.Stats>{
+			ctime: new Date(100 * 1000)
+		};
+
+		assert.ok(skipUpdate(source, dest, true));
+	});
+
+	it('Skip by time', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => false,
+			ctime: new Date(10 * 1000)
+		};
+
+		const dest = <fs.Stats>{
+			ctime: new Date(100 * 1000)
+		};
+
+		assert.ok(skipUpdate(source, dest, true));
+	});
+
+	it('No skip by time', () => {
+		const source = <fs.Stats>{
+			isDirectory: () => false,
+			ctime: new Date(100 * 1000)
+		};
+
+		const dest = <fs.Stats>{
+			ctime: new Date(10 * 1000)
+		};
+
+		assert.ok(!skipUpdate(source, dest, true));
+	});
+
+});
+
 describe('Basic tests', () => {
 
 	it('basic-0: Should create destination directory if it does not exist.', () => {
 		return syncy('test/**/*', '.tmp/basic-0').then(() => {
-			return io.pathExists('.tmp/basic-0').then((status) => {
+			return fsUtils.pathExists('.tmp/basic-0').then((status) => {
 				assert.ok(status);
 			});
 		});
@@ -87,7 +169,7 @@ describe('Updating files', () => {
 	it('updating-0: Remove file in `dest` directory.', () => {
 		return syncy('fixtures/**', '.tmp/updating-0')
 			// Remove one file in the destination directory
-			.then(() => io.removeFile('.tmp/updating-0/fixtures/folder-1/test.txt', { disableGlob: true }))
+			.then(() => fsUtils.removeFile('.tmp/updating-0/fixtures/folder-1/test.txt', { disableGlob: true }))
 			.then(() => syncy('fixtures/**', '.tmp/updating-0'))
 			.then(() => readdir('.tmp/updating-0'))
 			.then((result) => {
@@ -100,7 +182,7 @@ describe('Updating files', () => {
 		return copyRecursive('fixtures', '.tmp/fixtures-backup')
 			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
 			// Remove one file in the source directory
-			.then(() => io.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
+			.then(() => fsUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
 			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
 			.then(() => readdir('.tmp/updating-1'))
 			.then((result) => {
@@ -113,7 +195,7 @@ describe('Updating files', () => {
 		return copyRecursive('fixtures', '.tmp/fixtures-backup')
 			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-2'))
 			// Remove one file in the source directory
-			.then(() => io.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
+			.then(() => fsUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
 			.then(() => syncy('.tmp/fixtures-backup/**/*.txt', '.tmp/updating-2'))
 			.then(() => readdir('.tmp/updating-2'))
 			.then((result) => {
@@ -224,8 +306,8 @@ describe('Multiple destination', () => {
 		return syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two'])
 			// Remove one file in both destination directories
 			.then(() => Promise.all([
-				io.removeFile('.tmp/multiple-1-one/fixtures/folder-1/test.txt', { disableGlob: true }),
-				io.removeFile('.tmp/multiple-1-two/fixtures/folder-1/test.txt', { disableGlob: true })
+				fsUtils.removeFile('.tmp/multiple-1-one/fixtures/folder-1/test.txt', { disableGlob: true }),
+				fsUtils.removeFile('.tmp/multiple-1-two/fixtures/folder-1/test.txt', { disableGlob: true })
 			]))
 			.then(() => syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two']))
 			.then(() => Promise.all([

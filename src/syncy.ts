@@ -1,9 +1,10 @@
 'use strict';
 
+import * as fs from 'fs';
+
 import cpf = require('cp-file');
 import globParent = require('glob-parent');
 import globby = require('globby');
-import isGlob = require('is-glob');
 import minimatch = require('minimatch');
 
 import glob = require('glob');
@@ -11,36 +12,44 @@ import glob = require('glob');
 import LogManager from './managers/log';
 import * as optionsManager from './managers/options';
 
-import * as io from './lib/io';
-import * as utils from './lib/utils';
+import * as fsUtils from './utils/fs';
+import * as pathUtils from './utils/path';
 
 import { ILogEntry, Log } from './managers/log';
 import { IOptions, IPartialOptions } from './managers/options';
+import { Pattern } from './types/patterns';
 
-function assertPatternsInput(patterns: string[], dest: string): void {
-	if (patterns.length === 0) {
-		throw new TypeError('patterns must be a string or an array of strings');
+/**
+ * The reason to  not update the file
+ */
+export function skipUpdate(source: fs.Stats, dest: fs.Stats | null, updateAndDelete: boolean): boolean {
+	if (dest && !updateAndDelete) {
+		return true;
+	}
+	if (source.isDirectory()) {
+		return true;
+	}
+	if (dest && compareTime(source, dest)) {
+		return true;
 	}
 
-	for (const pattern of patterns) {
-		if (!isGlob(pattern)) {
-			throw new TypeError('patterns must be a glob-pattern. See https://github.com/isaacs/node-glob#glob-primer');
-		}
-	}
-
-	/* tslint:disable-next-line strict-type-predicates */
-	if (!dest || (dest && !Array.isArray(dest) && typeof dest !== 'string')) {
-		throw new TypeError('dest must be a string or an array of strings');
-	}
+	return false;
 }
 
-export async function run(patterns: string[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
+/**
+ * Compare update time of two files
+ */
+export function compareTime(source: fs.Stats, dest: fs.Stats): boolean {
+	return source.ctime.getTime() < dest.ctime.getTime();
+}
+
+export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
 
 	// If destination directory not exists then create it
-	await io.pathExists(dest).then((exists) => {
+	await fsUtils.pathExists(dest).then((exists) => {
 		if (!exists) {
-			return io.makeDirectory(dest);
+			return fsUtils.makeDirectory(dest);
 		}
 
 		return;
@@ -54,13 +63,13 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	});
 
 	// Get all the parts of a file path for excluded paths
-	const excludedFiles = (<string[]>options.ignoreInDest).reduce((ret, pattern) => {
+	const excludedFiles = (<Pattern[]>options.ignoreInDest).reduce((ret, pattern) => {
 		return ret.concat(minimatch.match(destFiles, pattern, { dot: true }));
-	}, [] as string[]).map((filepath) => utils.pathFromDestToSource(filepath, options.base));
+	}, [] as string[]).map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base));
 
 	let partsOfExcludedFiles: string[] = [];
 	for (const excludedFile of excludedFiles) {
-		partsOfExcludedFiles = partsOfExcludedFiles.concat(utils.expandDirectoryTree(excludedFile));
+		partsOfExcludedFiles = partsOfExcludedFiles.concat(pathUtils.expandDirectoryTree(excludedFile));
 	}
 
 	// Removing files from the destination directory
@@ -69,7 +78,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 		let treeOfBasePaths = [''];
 		patterns.forEach((pattern) => {
 			const parentDir = globParent(pattern);
-			const treePaths = utils.expandDirectoryTree(parentDir);
+			const treePaths = pathUtils.expandDirectoryTree(parentDir);
 
 			treeOfBasePaths = treeOfBasePaths.concat(treePaths);
 		});
@@ -79,7 +88,7 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 		// Deleting files
 		for (const destFile of destFiles) {
 			// To files in the source directory are added paths to basic directories
-			const pathFromDestToSource = utils.pathFromDestToSource(destFile, options.base);
+			const pathFromDestToSource = pathUtils.pathFromDestToSource(destFile, options.base);
 
 			// Search unique files to the destination directory
 			let skipIteration = false;
@@ -94,8 +103,8 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 				continue;
 			}
 
-			const pathFromSourceToDest = utils.pathFromSourceToDest(destFile, dest, null);
-			const removePromise = io.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
+			const pathFromSourceToDest = pathUtils.pathFromSourceToDest(destFile, dest, null);
+			const removePromise = fsUtils.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
 				log(<ILogEntry>{
 					action: 'remove',
 					from: destFile,
@@ -111,15 +120,15 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 
 	// Copying files
 	for (const from of sourceFiles) {
-		const to = utils.pathFromSourceToDest(from, dest, options.base);
+		const to = pathUtils.pathFromSourceToDest(from, dest, options.base);
 
 		// Get stats for source & dest file
-		const statFrom = io.statFile(from);
-		const statDest = io.statFile(to).catch(() => null);
+		const statFrom = fsUtils.statFile(from);
+		const statDest = fsUtils.statFile(to).catch(() => null);
 
 		const copyAction = Promise.all([statFrom, statDest]).then((stat) => {
 			// We should update this file?
-			if (utils.skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
+			if (skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
 				return;
 			}
 
@@ -140,17 +149,9 @@ export async function run(patterns: string[], dest: string, sourceFiles: string[
 	return Promise.all(arrayOfPromises);
 }
 
-export default async function syncy(source: string | string[], dest: string | string[], opts?: IPartialOptions): Promise<void[][]> {
-	const patterns = ([] as string[]).concat(source);
+export default async function syncy(source: Pattern | Pattern[], dest: string | string[], opts?: IPartialOptions): Promise<void[][]> {
+	const patterns = ([] as Pattern[]).concat(source);
 	const destination = ([] as string[]).concat(dest);
-
-	try {
-		destination.forEach((item) => {
-			assertPatternsInput(patterns, item);
-		});
-	} catch (err) {
-		return Promise.reject(err);
-	}
 
 	const options = optionsManager.prepare(opts);
 

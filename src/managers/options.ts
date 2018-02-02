@@ -1,3 +1,4 @@
+import { Pattern } from '../types/patterns';
 import { Log } from './log';
 
 export interface IOptions {
@@ -16,7 +17,7 @@ export interface IOptions {
 	/**
 	 * Never remove specified files from destination directory.
 	 */
-	ignoreInDest: string | string[];
+	ignoreInDest: Pattern | Pattern[];
 }
 
 export type IPartialOptions = Partial<IOptions>;
@@ -30,7 +31,7 @@ export function prepare(options?: IPartialOptions): IOptions {
 	}, options);
 
 	if (options && options.ignoreInDest) {
-		opts.ignoreInDest = ([] as string[]).concat(options.ignoreInDest);
+		opts.ignoreInDest = ([] as Pattern[]).concat(options.ignoreInDest);
 	}
 
 	return opts;

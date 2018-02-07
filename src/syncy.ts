@@ -66,13 +66,10 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 	const arrayOfPromises: Array<Promise<void>> = [];
 
 	// If destination directory not exists then create it
-	await fsUtils.pathExists(dest).then((exists) => {
-		if (!exists) {
-			return fsUtils.makeDirectory(dest);
-		}
-
-		return;
-	});
+	const isExists = await fsUtils.pathExists(dest);
+	if (!isExists) {
+		await fsUtils.makeDirectory(dest);
+	}
 
 	// Get files from destination directory
 	const destFiles = await getDestEntries(dest);

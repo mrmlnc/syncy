@@ -43,6 +43,25 @@ export function compareTime(source: fs.Stats, dest: fs.Stats): boolean {
 	return source.ctime.getTime() < dest.ctime.getTime();
 }
 
+export function getDestEntries(dest: string): Promise<string[]> {
+	const options: glob.IOptions = {
+		cwd: dest,
+		dot: true,
+		nosort: true
+	};
+
+	return globby('**', options);
+}
+
+export function getSourceEntries(patterns: Pattern | Pattern[]): Promise<string[]> {
+	const options: glob.IOptions = {
+		dot: true,
+		nosort: true
+	};
+
+	return globby(patterns, options);
+}
+
 export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
 
@@ -56,11 +75,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 	});
 
 	// Get files from destination directory
-	const destFiles = await globby('**', <glob.IOptions>{
-		cwd: dest,
-		dot: true,
-		nosort: true
-	});
+	const destFiles = await getDestEntries(dest);
 
 	// Get all the parts of a file path for excluded paths
 	const excludedFiles = (<Pattern[]>options.ignoreInDest).reduce((ret, pattern) => {
@@ -158,10 +173,7 @@ export default async function syncy(source: Pattern | Pattern[], dest: string | 
 	const logManager = new LogManager(options);
 	const logger = logManager.info.bind(logManager);
 
-	return globby(patterns, <glob.IOptions>{
-		dot: true,
-		nosort: true
-	}).then((sourceFiles) => {
+	return getSourceEntries(source).then((sourceFiles) => {
 		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options, logger)));
 	});
 }

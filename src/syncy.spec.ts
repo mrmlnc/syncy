@@ -106,7 +106,7 @@ describe('Syncy', () => {
 	});
 
 	describe('Basic tests', () => {
-		it('basic-0: Should create destination directory if it does not exist.', () => {
+		it('basic-0: Should create destination directory if it does not exist', () => {
 			return syncy('test/**/*', '.tmp/basic-0').then(() => {
 				return fsUtils.pathExists('.tmp/basic-0').then((status) => {
 					assert.ok(status);
@@ -114,7 +114,7 @@ describe('Syncy', () => {
 			});
 		});
 
-		it('basic-1: Should just copy files.', () => {
+		it('basic-1: Should just copy files', () => {
 			return syncy('fixtures/**/*', '.tmp/basic-1')
 				.then(() => readdir('.tmp/basic-1'))
 				.then((result) => {
@@ -122,7 +122,7 @@ describe('Syncy', () => {
 				});
 		});
 
-		it('basic-2: Should just copy files without `base` option in paths.', () => {
+		it('basic-2: Should just copy files without `base` option in paths', () => {
 			return syncy('fixtures/**', '.tmp/basic-2', { base: 'fixtures' })
 				.then(() => readdir('.tmp/basic-2'))
 				.then((result) => {
@@ -150,7 +150,7 @@ describe('Syncy', () => {
 	});
 
 	describe('Updating files', () => {
-		it('updating-0: Remove file in `dest` directory.', () => {
+		it('updating-0: Remove file in `dest` directory', () => {
 			return syncy('fixtures/**', '.tmp/updating-0')
 				// Remove one file in the destination directory
 				.then(() => fsUtils.removeFile('.tmp/updating-0/fixtures/folder-1/test.txt', { disableGlob: true }))
@@ -161,7 +161,7 @@ describe('Syncy', () => {
 				});
 		});
 
-		it('updating-1: Remove file in `src` directory.', () => {
+		it('updating-1: Remove file in `src` directory', () => {
 			// Backup test files
 			return copyRecursive('fixtures', '.tmp/fixtures-backup')
 				.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
@@ -269,7 +269,7 @@ describe('Syncy', () => {
 	});
 
 	describe('Multiple destination', () => {
-		it('multiple-0: Multiple destination directories.', () => {
+		it('multiple-0: Multiple destination directories', () => {
 			return syncy('fixtures/**', ['.tmp/multiple-0-one', '.tmp/multiple-0-two'])
 				.then(() => Promise.all([
 					readdir('.tmp/multiple-0-one'),
@@ -280,7 +280,7 @@ describe('Syncy', () => {
 				});
 		});
 
-		it('multiple-1: Remove file in both `dest` directories.', () => {
+		it('multiple-1: Remove file in both `dest` directories', () => {
 			return syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two'])
 				// Remove one file in both destination directories
 				.then(() => Promise.all([

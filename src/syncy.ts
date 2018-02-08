@@ -43,46 +43,61 @@ export function compareTime(source: fs.Stats, dest: fs.Stats): boolean {
 	return source.ctime.getTime() < dest.ctime.getTime();
 }
 
+export function getDestEntries(dest: string): Promise<string[]> {
+	const options: glob.IOptions = {
+		cwd: dest,
+		dot: true,
+		nosort: true
+	};
+
+	return globby('**', options);
+}
+
+export function getSourceEntries(patterns: Pattern | Pattern[]): Promise<string[]> {
+	const options: glob.IOptions = {
+		dot: true,
+		nosort: true
+	};
+
+	return globby(patterns, options);
+}
+
+/**
+ * Get all the parts of a file path for excluded paths.
+ */
+export function getPartsOfExcludedPaths(destFiles: string[], options: IOptions): string[] {
+	return (<Pattern[]>options.ignoreInDest)
+		.reduce((collection, pattern) => collection.concat(minimatch.match(destFiles, pattern, { dot: true })), [] as string[])
+		.map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base))
+		.reduce((collection, filepath) => collection.concat(pathUtils.expandDirectoryTree(filepath)), [] as string[]);
+}
+
+export function getTreeOfBasePaths(patterns: Pattern[]): string[] {
+	return patterns.reduce((collection, pattern) => {
+		const parentDir = globParent(pattern);
+		const treePaths = pathUtils.expandDirectoryTree(parentDir);
+
+		return collection.concat(treePaths);
+	}, ['']);
+}
+
 export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
 
 	// If destination directory not exists then create it
-	await fsUtils.pathExists(dest).then((exists) => {
-		if (!exists) {
-			return fsUtils.makeDirectory(dest);
-		}
-
-		return;
-	});
+	const isExists = await fsUtils.pathExists(dest);
+	if (!isExists) {
+		await fsUtils.makeDirectory(dest);
+	}
 
 	// Get files from destination directory
-	const destFiles = await globby('**', <glob.IOptions>{
-		cwd: dest,
-		dot: true,
-		nosort: true
-	});
-
-	// Get all the parts of a file path for excluded paths
-	const excludedFiles = (<Pattern[]>options.ignoreInDest).reduce((ret, pattern) => {
-		return ret.concat(minimatch.match(destFiles, pattern, { dot: true }));
-	}, [] as string[]).map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base));
-
-	let partsOfExcludedFiles: string[] = [];
-	for (const excludedFile of excludedFiles) {
-		partsOfExcludedFiles = partsOfExcludedFiles.concat(pathUtils.expandDirectoryTree(excludedFile));
-	}
+	const destFiles = await getDestEntries(dest);
+	const partsOfExcludedFiles = getPartsOfExcludedPaths(destFiles, options);
 
 	// Removing files from the destination directory
 	if (options.updateAndDelete) {
 		// Create a full list of the basic directories
-		let treeOfBasePaths = [''];
-		patterns.forEach((pattern) => {
-			const parentDir = globParent(pattern);
-			const treePaths = pathUtils.expandDirectoryTree(parentDir);
-
-			treeOfBasePaths = treeOfBasePaths.concat(treePaths);
-		});
-
+		const treeOfBasePaths = getTreeOfBasePaths(patterns);
 		const fullSourcePaths = sourceFiles.concat(treeOfBasePaths, partsOfExcludedFiles);
 
 		// Deleting files
@@ -158,10 +173,7 @@ export default async function syncy(source: Pattern | Pattern[], dest: string | 
 	const logManager = new LogManager(options);
 	const logger = logManager.info.bind(logManager);
 
-	return globby(patterns, <glob.IOptions>{
-		dot: true,
-		nosort: true
-	}).then((sourceFiles) => {
+	return getSourceEntries(source).then((sourceFiles) => {
 		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options, logger)));
 	});
 }

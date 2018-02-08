@@ -36,287 +36,265 @@ async function copyRecursive(source: string, dest: string): Promise<void> {
 	await Promise.all(promises);
 }
 
-describe('Utils', () => {
+describe('Syncy', () => {
+	describe('.compareTime', () => {
+		it('should return true if second date bigger then first', () => {
+			assert.ok(compareTime(<fs.Stats>{ ctime: new Date(10 * 1000) }, <fs.Stats>{ ctime: new Date(100 * 1000) }));
+		});
 
-	it('compareTime', () => {
-		assert.ok(compareTime(<fs.Stats>{ ctime: new Date(10 * 1000) }, <fs.Stats>{ ctime: new Date(100 * 1000) }));
-		assert.ok(!compareTime(<fs.Stats>{ ctime: new Date(100 * 1000) }, <fs.Stats>{ ctime: new Date(10 * 1000) }));
+		it('should return false is first date bigger then second', () => {
+			assert.ok(!compareTime(<fs.Stats>{ ctime: new Date(100 * 1000) }, <fs.Stats>{ ctime: new Date(10 * 1000) }));
+		});
 	});
 
-});
+	describe('.skipUpdate', () => {
+		it('should return true if source is directory', () => {
+			const source = <fs.Stats>{
+				isDirectory: () => true
+			};
 
-describe('skipUpdate', () => {
+			const dest = <fs.Stats>{};
 
-	it('Skip by directory', () => {
-		const source = <fs.Stats>{
-			isDirectory: () => true
-		};
+			assert.ok(skipUpdate(source, dest, true /* updateAndDelete */));
+		});
 
-		const dest = <fs.Stats>{};
+		it('should return false if dest is outdated', () => {
+			const source = <fs.Stats>{
+				isDirectory: () => false,
+				ctime: new Date(100 * 1000)
+			};
 
-		assert.ok(skipUpdate(source, dest, true));
+			const dest = <fs.Stats>{
+				ctime: new Date(10 * 1000)
+			};
+
+			assert.ok(!skipUpdate(source, dest, true /* updateAndDelete */));
+		});
+
+		it('should return true if «updateAndDelete» is disabled', () => {
+			const source = <fs.Stats>{};
+			const dest = <fs.Stats>{};
+
+			assert.ok(skipUpdate(source, dest, false /* updateAndDelete */));
+		});
+
+		it('should return true if «updateAndDelete» is enabled and dest is up-to-date', () => {
+			const source = <fs.Stats>{
+				isDirectory: () => false,
+				ctime: new Date(10 * 1000)
+			};
+
+			const dest = <fs.Stats>{
+				ctime: new Date(100 * 1000)
+			};
+
+			assert.ok(skipUpdate(source, dest, true /* updateAndDelete */));
+		});
+
+		it('should return true if dest is up-to-date', () => {
+			const source = <fs.Stats>{
+				isDirectory: () => false,
+				ctime: new Date(10 * 1000)
+			};
+
+			const dest = <fs.Stats>{
+				ctime: new Date(100 * 1000)
+			};
+
+			assert.ok(skipUpdate(source, dest, true /* updateAndDelete */));
+		});
 	});
 
-	it('No skip by directory', () => {
-		const source = <fs.Stats>{
-			isDirectory: () => false,
-			ctime: new Date(100 * 1000)
-		};
+	describe('Basic tests', () => {
+		it('basic-0: Should create destination directory if it does not exist', () => {
+			return syncy('test/**/*', '.tmp/basic-0').then(() => {
+				return fsUtils.pathExists('.tmp/basic-0').then((status) => {
+					assert.ok(status);
+				});
+			});
+		});
 
-		const dest = <fs.Stats>{
-			ctime: new Date(10 * 1000)
-		};
+		it('basic-1: Should just copy files', () => {
+			return syncy('fixtures/**/*', '.tmp/basic-1')
+				.then(() => readdir('.tmp/basic-1'))
+				.then((result) => {
+					assert.equal(result.length, 8);
+				});
+		});
 
-		assert.ok(!skipUpdate(source, dest, true));
+		it('basic-2: Should just copy files without `base` option in paths', () => {
+			return syncy('fixtures/**', '.tmp/basic-2', { base: 'fixtures' })
+				.then(() => readdir('.tmp/basic-2'))
+				.then((result) => {
+					assert.equal(result.length, 8);
+				});
+		});
+
+		it('basic-3: Removing files', () => {
+			return createFiles('.tmp/basic-2/fixtures', 3)
+				.then(() => syncy('fixtures/**', '.tmp/basic-3'))
+				.then(() => readdir('.tmp/basic-3'))
+				.then((result) => {
+					assert.equal(result.length, 8);
+				});
+		});
+
+		it('basic-4: Skipping files', () => {
+			return syncy('fixtures/**', '.tmp/basic-4')
+				.then(() => syncy('fixtures/**', '.tmp/basic-4'))
+				.then(() => readdir('.tmp/basic-4'))
+				.then((result) => {
+					assert.equal(result.length, 8);
+				});
+		});
 	});
 
-	it('Skip by options', () => {
-		const source = <fs.Stats>{};
-		const dest = <fs.Stats>{};
+	describe('Updating files', () => {
+		it('updating-0: Remove file in `dest` directory', () => {
+			return syncy('fixtures/**', '.tmp/updating-0')
+				// Remove one file in the destination directory
+				.then(() => fsUtils.removeFile('.tmp/updating-0/fixtures/folder-1/test.txt', { disableGlob: true }))
+				.then(() => syncy('fixtures/**', '.tmp/updating-0'))
+				.then(() => readdir('.tmp/updating-0'))
+				.then((result) => {
+					assert.equal(result.length, 8);
+				});
+		});
 
-		assert.ok(skipUpdate(source, dest, false));
+		it('updating-1: Remove file in `src` directory', () => {
+			// Backup test files
+			return copyRecursive('fixtures', '.tmp/fixtures-backup')
+				.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
+				// Remove one file in the source directory
+				.then(() => fsUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
+				.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
+				.then(() => readdir('.tmp/updating-1'))
+				.then((result) => {
+					assert.equal(result.length, 7);
+				});
+		});
+
+		it('updating-2: Remove file in `src` (with `**/*` pattern)', () => {
+			// Backup test files
+			return copyRecursive('fixtures', '.tmp/fixtures-backup')
+				.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-2'))
+				// Remove one file in the source directory
+				.then(() => fsUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
+				.then(() => syncy('.tmp/fixtures-backup/**/*.txt', '.tmp/updating-2'))
+				.then(() => readdir('.tmp/updating-2'))
+				.then((result) => {
+					assert.equal(result.length, 7);
+				});
+		});
+
+		it('updating-3: Update the contents of a file', () => {
+			// Backup test files
+			return copyRecursive('fixtures', '.tmp/fixtures-backup')
+				.then(() => syncy('fixtures/**', '.tmp/updating-3', { base: 'fixtures' }))
+				.then(() => writeFile('.tmp/fixtures-backup/fixtures/folder-2/test.txt', 'test'))
+				.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-3', { base: '.tmp/fixtures-backup/fixtures' }))
+				.then(() => readFile('.tmp/updating-3/folder-2/test.txt', 'utf-8'))
+				.then((data) => {
+					assert.equal(data, 'test');
+				});
+		});
+
+		it('updating-4: No update and delete files from dest (updateAndDelete)', () => {
+			return createFiles('.tmp/updating-4/fixtures', 3)
+				.then(() => syncy('fixtures/**', '.tmp/updating-4', { updateAndDelete: false }))
+				.then(() => readdir('.tmp/updating-4'))
+				.then((result) => {
+					// File `test-2.txt` overwritten
+					assert.equal(result.length, 10);
+				});
+		});
 	});
 
-	it('No skip by options', () => {
-		const source = <fs.Stats>{
-			isDirectory: () => false,
-			ctime: new Date(10 * 1000)
-		};
+	describe.skip('Console information', () => {
+		it('console-0: Verbose (true)', () => {
+			// Hook for console output
+			const clgDump = console.log;
+			let stdout = '';
+			console.log = (message: string) => {
+				stdout += JSON.stringify(message);
+			};
 
-		const dest = <fs.Stats>{
-			ctime: new Date(100 * 1000)
-		};
+			return syncy('fixtures/**', '.tmp/console-0', { verbose: true }).then(() => {
+				console.log = clgDump;
+				assert.equal(/fixtures\/test-2.txt/.test(stdout), true);
+			});
+		});
 
-		assert.ok(skipUpdate(source, dest, true));
-	});
+		it('console-1: Verbose (function)', () => {
+			let lastAction = '';
 
-	it('Skip by time', () => {
-		const source = <fs.Stats>{
-			isDirectory: () => false,
-			ctime: new Date(10 * 1000)
-		};
+			const verbose = (log: ILogEntry) => lastAction = log.action;
 
-		const dest = <fs.Stats>{
-			ctime: new Date(100 * 1000)
-		};
-
-		assert.ok(skipUpdate(source, dest, true));
-	});
-
-	it('No skip by time', () => {
-		const source = <fs.Stats>{
-			isDirectory: () => false,
-			ctime: new Date(100 * 1000)
-		};
-
-		const dest = <fs.Stats>{
-			ctime: new Date(10 * 1000)
-		};
-
-		assert.ok(!skipUpdate(source, dest, true));
-	});
-
-});
-
-describe('Basic tests', () => {
-
-	it('basic-0: Should create destination directory if it does not exist.', () => {
-		return syncy('test/**/*', '.tmp/basic-0').then(() => {
-			return fsUtils.pathExists('.tmp/basic-0').then((status) => {
-				assert.ok(status);
+			return syncy('fixtures/**', '.tmp/console-1', { verbose }).then(() => {
+				assert.equal(lastAction, 'copy');
 			});
 		});
 	});
 
-	it('basic-1: Should just copy files.', () => {
-		return syncy('fixtures/**/*', '.tmp/basic-1')
-			.then(() => readdir('.tmp/basic-1'))
-			.then((result) => {
-				assert.equal(result.length, 8);
-			});
-	});
+	describe('Ignore files', () => {
+		it('ignore-0: Ignore `test-0.txt` in dest directory (ignoreInDest)', () => {
+			return createFiles('.tmp/ignore-0/fixtures', 1)
+				.then(() => syncy('fixtures/**', '.tmp/ignore-0', { ignoreInDest: '**/test-0.txt' }))
+				.then(() => readdir('.tmp/ignore-0'))
+				.then((result) => {
+					assert.equal(result.length, 9);
+				});
+		});
 
-	it('basic-2: Should just copy files without `base` option in paths.', () => {
-		return syncy('fixtures/**', '.tmp/basic-2', { base: 'fixtures' })
-			.then(() => readdir('.tmp/basic-2'))
-			.then((result) => {
-				assert.equal(result.length, 8);
-			});
-	});
+		it('ignore-1: Don\'t remove directory with ignored files', () => {
+			return createFiles('.tmp/ignore-1/fixtures/main', 1)
+				.then(() => syncy('fixtures/**', '.tmp/ignore-1', { ignoreInDest: '**/*.txt' }))
+				.then(() => readdir('.tmp/ignore-1'))
+				.then((result) => {
+					assert.equal(result.length, 9);
+				});
+		});
 
-	it('basic-3: Removing files', () => {
-		return createFiles('.tmp/basic-2/fixtures', 3)
-			.then(() => syncy('fixtures/**', '.tmp/basic-3'))
-			.then(() => readdir('.tmp/basic-3'))
-			.then((result) => {
-				assert.equal(result.length, 8);
-			});
-	});
-
-	it('basic-4: Skipping files', () => {
-		return syncy('fixtures/**', '.tmp/basic-4')
-			.then(() => syncy('fixtures/**', '.tmp/basic-4'))
-			.then(() => readdir('.tmp/basic-4'))
-			.then((result) => {
-				assert.equal(result.length, 8);
-			});
-	});
-
-});
-
-describe('Updating files', () => {
-
-	it('updating-0: Remove file in `dest` directory.', () => {
-		return syncy('fixtures/**', '.tmp/updating-0')
-			// Remove one file in the destination directory
-			.then(() => fsUtils.removeFile('.tmp/updating-0/fixtures/folder-1/test.txt', { disableGlob: true }))
-			.then(() => syncy('fixtures/**', '.tmp/updating-0'))
-			.then(() => readdir('.tmp/updating-0'))
-			.then((result) => {
-				assert.equal(result.length, 8);
-			});
-	});
-
-	it('updating-1: Remove file in `src` directory.', () => {
-		// Backup test files
-		return copyRecursive('fixtures', '.tmp/fixtures-backup')
-			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
-			// Remove one file in the source directory
-			.then(() => fsUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
-			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
-			.then(() => readdir('.tmp/updating-1'))
-			.then((result) => {
-				assert.equal(result.length, 7);
-			});
-	});
-
-	it('updating-2: Remove file in `src` (with `**/*` pattern)', () => {
-		// Backup test files
-		return copyRecursive('fixtures', '.tmp/fixtures-backup')
-			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-2'))
-			// Remove one file in the source directory
-			.then(() => fsUtils.removeFile('.tmp/fixtures-backup/fixtures/folder-1/test.txt', { disableGlob: true }))
-			.then(() => syncy('.tmp/fixtures-backup/**/*.txt', '.tmp/updating-2'))
-			.then(() => readdir('.tmp/updating-2'))
-			.then((result) => {
-				assert.equal(result.length, 7);
-			});
-	});
-
-	it('updating-3: Update the contents of a file', () => {
-		// Backup test files
-		return copyRecursive('fixtures', '.tmp/fixtures-backup')
-			.then(() => syncy('fixtures/**', '.tmp/updating-3', { base: 'fixtures' }))
-			.then(() => writeFile('.tmp/fixtures-backup/fixtures/folder-2/test.txt', 'test'))
-			.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-3', { base: '.tmp/fixtures-backup/fixtures' }))
-			.then(() => readFile('.tmp/updating-3/folder-2/test.txt', 'utf-8'))
-			.then((data) => {
-				assert.equal(data, 'test');
-			});
-	});
-
-	it('updating-4: No update and delete files from dest (updateAndDelete)', () => {
-		return createFiles('.tmp/updating-4/fixtures', 3)
-			.then(() => syncy('fixtures/**', '.tmp/updating-4', { updateAndDelete: false }))
-			.then(() => readdir('.tmp/updating-4'))
-			.then((result) => {
-				// File `test-2.txt` overwritten
-				assert.equal(result.length, 10);
-			});
-	});
-
-});
-
-describe.skip('Console information', () => {
-
-	it('console-0: Verbose (true)', () => {
-		// Hook for console output
-		const clgDump = console.log;
-		let stdout = '';
-		console.log = function (): void {
-			stdout += JSON.stringify(arguments);
-		};
-
-		return syncy('fixtures/**', '.tmp/console-0', { verbose: true }).then(() => {
-			console.log = clgDump;
-			assert.equal(/fixtures\/test-2.txt/.test(stdout), true);
+		it('ignore-2: Don\'t remove directory with multiple ignored files', () => {
+			return Promise.all([
+				createFiles('.tmp/ignore-2/one', 1),
+				createFiles('.tmp/ignore-2/two', 1)
+			])
+				.then(() => syncy('fixtures/**', '.tmp/ignore-2', { base: 'fixtures', ignoreInDest: ['one/**/*', 'two/**/*'] }))
+				.then(() => readdir('.tmp/ignore-2'))
+				.then((result) => {
+					assert.equal(result.length, 10);
+				});
 		});
 	});
 
-	it('console-1: Verbose (function)', () => {
-		let lastAction = '';
+	describe('Multiple destination', () => {
+		it('multiple-0: Multiple destination directories', () => {
+			return syncy('fixtures/**', ['.tmp/multiple-0-one', '.tmp/multiple-0-two'])
+				.then(() => Promise.all([
+					readdir('.tmp/multiple-0-one'),
+					readdir('.tmp/multiple-0-two')
+				]))
+				.then((result) => {
+					assert.equal(result[0].length + result[1].length, 16);
+				});
+		});
 
-		const verbose = (log: ILogEntry) => lastAction = log.action;
-
-		return syncy('fixtures/**', '.tmp/console-1', { verbose }).then(() => {
-			assert.equal(lastAction, 'copy');
+		it('multiple-1: Remove file in both `dest` directories', () => {
+			return syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two'])
+				// Remove one file in both destination directories
+				.then(() => Promise.all([
+					fsUtils.removeFile('.tmp/multiple-1-one/fixtures/folder-1/test.txt', { disableGlob: true }),
+					fsUtils.removeFile('.tmp/multiple-1-two/fixtures/folder-1/test.txt', { disableGlob: true })
+				]))
+				.then(() => syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two']))
+				.then(() => Promise.all([
+					readdir('.tmp/multiple-1-one'),
+					readdir('.tmp/multiple-1-two')
+				]))
+				.then((result) => {
+					assert.equal(result[0].length + result[1].length, 16);
+				});
 		});
 	});
-
-});
-
-describe('Ignore files', () => {
-
-	it('ignore-0: Ignore `test-0.txt` in dest directory (ignoreInDest)', () => {
-		return createFiles('.tmp/ignore-0/fixtures', 1)
-			.then(() => syncy('fixtures/**', '.tmp/ignore-0', { ignoreInDest: '**/test-0.txt' }))
-			.then(() => readdir('.tmp/ignore-0'))
-			.then((result) => {
-				assert.equal(result.length, 9);
-			});
-	});
-
-	it('ignore-1: Don\'t remove directory with ignored files', () => {
-		return createFiles('.tmp/ignore-1/fixtures/main', 1)
-			.then(() => syncy('fixtures/**', '.tmp/ignore-1', { ignoreInDest: '**/*.txt' }))
-			.then(() => readdir('.tmp/ignore-1'))
-			.then((result) => {
-				assert.equal(result.length, 9);
-			});
-	});
-
-	it('ignore-2: Don\'t remove directory with multiple ignored files', () => {
-		return Promise.all([
-			createFiles('.tmp/ignore-2/one', 1),
-			createFiles('.tmp/ignore-2/two', 1)
-		])
-			.then(() => syncy('fixtures/**', '.tmp/ignore-2', { base: 'fixtures', ignoreInDest: ['one/**/*', 'two/**/*'] }))
-			.then(() => readdir('.tmp/ignore-2'))
-			.then((result) => {
-				assert.equal(result.length, 10);
-			});
-	});
-
-});
-
-describe('Multiple destination', () => {
-
-	it('multiple-0: Multiple destination directories.', () => {
-		return syncy('fixtures/**', ['.tmp/multiple-0-one', '.tmp/multiple-0-two'])
-			.then(() => Promise.all([
-				readdir('.tmp/multiple-0-one'),
-				readdir('.tmp/multiple-0-two')
-			]))
-			.then((result) => {
-				assert.equal(result[0].length + result[1].length, 16);
-			});
-	});
-
-	it('multiple-1: Remove file in both `dest` directories.', () => {
-		return syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two'])
-			// Remove one file in both destination directories
-			.then(() => Promise.all([
-				fsUtils.removeFile('.tmp/multiple-1-one/fixtures/folder-1/test.txt', { disableGlob: true }),
-				fsUtils.removeFile('.tmp/multiple-1-two/fixtures/folder-1/test.txt', { disableGlob: true })
-			]))
-			.then(() => syncy('fixtures/**', ['.tmp/multiple-1-one', '.tmp/multiple-1-two']))
-			.then(() => Promise.all([
-				readdir('.tmp/multiple-1-one'),
-				readdir('.tmp/multiple-1-two')
-			]))
-			.then((result) => {
-				assert.equal(result[0].length + result[1].length, 16);
-			});
-	});
-
 });

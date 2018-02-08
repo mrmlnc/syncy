@@ -62,6 +62,16 @@ export function getSourceEntries(patterns: Pattern | Pattern[]): Promise<string[
 	return globby(patterns, options);
 }
 
+/**
+ * Get all the parts of a file path for excluded paths.
+ */
+export function getPartsOfExcludedPaths(destFiles: string[], options: IOptions): string[] {
+	return (<Pattern[]>options.ignoreInDest)
+		.reduce((collection, pattern) => collection.concat(minimatch.match(destFiles, pattern, { dot: true })), [] as string[])
+		.map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base))
+		.reduce((collection, filepath) => collection.concat(pathUtils.expandDirectoryTree(filepath)), [] as string[]);
+}
+
 export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
 
@@ -73,16 +83,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 
 	// Get files from destination directory
 	const destFiles = await getDestEntries(dest);
-
-	// Get all the parts of a file path for excluded paths
-	const excludedFiles = (<Pattern[]>options.ignoreInDest).reduce((ret, pattern) => {
-		return ret.concat(minimatch.match(destFiles, pattern, { dot: true }));
-	}, [] as string[]).map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base));
-
-	let partsOfExcludedFiles: string[] = [];
-	for (const excludedFile of excludedFiles) {
-		partsOfExcludedFiles = partsOfExcludedFiles.concat(pathUtils.expandDirectoryTree(excludedFile));
-	}
+	const partsOfExcludedFiles = getPartsOfExcludedPaths(destFiles, options);
 
 	// Removing files from the destination directory
 	if (options.updateAndDelete) {

@@ -72,6 +72,15 @@ export function getPartsOfExcludedPaths(destFiles: string[], options: IOptions):
 		.reduce((collection, filepath) => collection.concat(pathUtils.expandDirectoryTree(filepath)), [] as string[]);
 }
 
+export function getTreeOfBasePaths(patterns: Pattern[]): string[] {
+	return patterns.reduce((collection, pattern) => {
+		const parentDir = globParent(pattern);
+		const treePaths = pathUtils.expandDirectoryTree(parentDir);
+
+		return collection.concat(treePaths);
+	}, ['']);
+}
+
 export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
 
@@ -88,14 +97,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 	// Removing files from the destination directory
 	if (options.updateAndDelete) {
 		// Create a full list of the basic directories
-		let treeOfBasePaths = [''];
-		patterns.forEach((pattern) => {
-			const parentDir = globParent(pattern);
-			const treePaths = pathUtils.expandDirectoryTree(parentDir);
-
-			treeOfBasePaths = treeOfBasePaths.concat(treePaths);
-		});
-
+		const treeOfBasePaths = getTreeOfBasePaths(patterns);
 		const fullSourcePaths = sourceFiles.concat(treeOfBasePaths, partsOfExcludedFiles);
 
 		// Deleting files

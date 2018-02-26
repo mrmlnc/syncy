@@ -53,7 +53,7 @@ export function getSourceEntries(patterns: Pattern | Pattern[]): Promise<string[
  * Get all the parts of a file path for excluded paths.
  */
 export function getPartsOfExcludedPaths(destFiles: string[], options: IOptions): string[] {
-	return (<Pattern[]>options.ignoreInDest)
+	return options.ignoreInDest
 		.reduce((collection, pattern) => collection.concat(minimatch.match(destFiles, pattern, { dot: true })), [] as string[])
 		.map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base))
 		.reduce((collection, filepath) => collection.concat(pathUtils.expandDirectoryTree(filepath)), [] as string[]);

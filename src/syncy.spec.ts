@@ -239,7 +239,7 @@ describe('Syncy', () => {
 	describe('Ignore files', () => {
 		it('ignore-0: Ignore `test-0.txt` in dest directory (ignoreInDest)', () => {
 			return createFiles('.tmp/ignore-0/fixtures', 1)
-				.then(() => syncy('fixtures/**', '.tmp/ignore-0', { ignoreInDest: '**/test-0.txt' }))
+				.then(() => syncy('fixtures/**', '.tmp/ignore-0', { ignoreInDest: ['**/test-0.txt'] }))
 				.then(() => readdir('.tmp/ignore-0'))
 				.then((result) => {
 					assert.equal(result.length, 9);
@@ -248,7 +248,7 @@ describe('Syncy', () => {
 
 		it('ignore-1: Don\'t remove directory with ignored files', () => {
 			return createFiles('.tmp/ignore-1/fixtures/main', 1)
-				.then(() => syncy('fixtures/**', '.tmp/ignore-1', { ignoreInDest: '**/*.txt' }))
+				.then(() => syncy('fixtures/**', '.tmp/ignore-1', { ignoreInDest: ['**/*.txt'] }))
 				.then(() => readdir('.tmp/ignore-1'))
 				.then((result) => {
 					assert.equal(result.length, 9);

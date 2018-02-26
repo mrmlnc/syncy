@@ -73,7 +73,7 @@ Destination directory or directories.
   // Remove all files from dest that are not found in src. Default: true
   updateAndDelete: true,
   // Never remove js files from destination. Default: false
-  ignoreInDest: '**/*.js'
+  ignoreInDest: ['**/*.js']
 }
 ```
 

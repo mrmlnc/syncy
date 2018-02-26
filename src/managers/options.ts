@@ -17,7 +17,7 @@ export interface IOptions {
 	/**
 	 * Never remove specified files from destination directory.
 	 */
-	ignoreInDest: Pattern | Pattern[];
+	ignoreInDest: Pattern[];
 }
 
 export type IPartialOptions = Partial<IOptions>;
@@ -29,10 +29,6 @@ export function prepare(options?: IPartialOptions): IOptions {
 		updateAndDelete: true,
 		ignoreInDest: []
 	}, options);
-
-	if (options && options.ignoreInDest) {
-		opts.ignoreInDest = ([] as Pattern[]).concat(options.ignoreInDest);
-	}
 
 	return opts;
 }

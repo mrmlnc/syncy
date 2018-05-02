@@ -15,6 +15,10 @@ export interface IOptions {
 	 */
 	updateAndDelete: boolean;
 	/**
+	 * Update files in `dest` that are found in `src`.
+	 */
+	allowOverwrite?: boolean;
+	/**
 	 * Never remove specified files from destination directory.
 	 */
 	ignoreInDest: Pattern[];
@@ -29,6 +33,10 @@ export function prepare(options?: IPartialOptions): IOptions {
 		updateAndDelete: true,
 		ignoreInDest: []
 	}, options);
+
+	if (!('allowOverwrite' in opts)) {
+		opts.allowOverwrite = opts.updateAndDelete;
+	}
 
 	return opts;
 }

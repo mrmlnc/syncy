@@ -130,7 +130,7 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 
 		const copyAction = Promise.all([statFrom, statDest]).then((stat) => {
 			// We should update this file?
-			if (skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
+			if (skipUpdate(stat[0], stat[1], <boolean> options.allowOverwrite)) {
 				return;
 			}
 

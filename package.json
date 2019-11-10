@@ -27,7 +27,7 @@
     "eslint-config-mrmlnc": "^1.0.3",
     "mocha": "^5.0.0",
     "recursive-readdir": "^2.2.2",
-    "typescript": "^3.6.3"
+    "typescript": "~3.6.3"
   },
   "dependencies": {
     "cp-file": "5.0.0",

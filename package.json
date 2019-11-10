@@ -15,7 +15,6 @@
   "typings": "./out/syncy.d.ts",
   "devDependencies": {
     "@nodelib/fs.macchiato": "^1.0.2",
-    "@types/cp-file": "^4.2.0",
     "@types/glob-parent": "^3.1.1",
     "@types/minimatch": "^3.0.3",
     "@types/mkpath": "^0.1.29",
@@ -30,7 +29,7 @@
     "typescript": "~3.6.3"
   },
   "dependencies": {
-    "cp-file": "5.0.0",
+    "cp-file": "7.0.0",
     "fast-glob": "^2.0.2",
     "glob-parent": "^3.1.0",
     "minimatch": "3.0.4",

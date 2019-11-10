@@ -1,14 +1,16 @@
 # Common files
 .editorconfig
+.gitattributes
 .gitignore
-.travis.yml
-appveyor.yml
+.vsts
 tsconfig.json
-tslint.json
+.eslintrc.json
 
-# Builded files
-out/benchmark
-out/test
+# Log & Cache files
+.eslintcache
+
+# Output files
+out/tests
 out/**/*.js.map
 out/**/*.spec.{d.ts,js}
 
@@ -17,7 +19,6 @@ out/**/*.spec.{d.ts,js}
 
 # Other directories
 .tmp
-.benchmark
 .github
 fixtures
 src

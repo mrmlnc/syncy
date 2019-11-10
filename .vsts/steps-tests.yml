@@ -1,0 +1,6 @@
+steps:
+  - script: npm run lint
+    displayName: Run Hygiene Checks
+
+  - script: npm run test
+    displayName: Run Unit Tests

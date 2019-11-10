@@ -1,0 +1,46 @@
+trigger:
+  branches:
+    include:
+      - master
+      - releases/*
+
+jobs:
+  - job: Build
+    strategy:
+      matrix:
+        UBUNTU_NODE_8:
+          IMAGE_TYPE: 'ubuntu-latest'
+          NODE_VERSION: 8.x
+        UBUNTU_NODE_10:
+          IMAGE_TYPE: 'ubuntu-latest'
+          NODE_VERSION: 10.x
+        UBUNTU_NODE_12:
+          IMAGE_TYPE: 'ubuntu-latest'
+          NODE_VERSION: 12.x
+
+        WINDOWS_NODE_8:
+          IMAGE_TYPE: 'windows-latest'
+          NODE_VERSION: 8.x
+        WINDOWS_NODE_10:
+          IMAGE_TYPE: 'windows-latest'
+          NODE_VERSION: 10.x
+        WINDOWS_NODE_12:
+          IMAGE_TYPE: 'windows-latest'
+          NODE_VERSION: 12.x
+
+        MACOS_NODE_8:
+          IMAGE_TYPE: 'macOS-latest'
+          NODE_VERSION: 8.x
+        MACOS_NODE_10:
+          IMAGE_TYPE: 'macOS-latest'
+          NODE_VERSION: 10.x
+        MACOS_NODE_12:
+          IMAGE_TYPE: 'macOS-latest'
+          NODE_VERSION: 12.x
+    pool:
+      vmImage: $(IMAGE_TYPE)
+    steps:
+      - template: steps-build.yml
+        parameters:
+          node_version: $(NODE_VERSION)
+      - template: steps-tests.yml

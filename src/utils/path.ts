@@ -7,10 +7,11 @@ export function normalizePath(filepath: string): string {
 /**
  * Processing path to the source directory from destination directory
  */
-export function pathFromDestToSource(destPath: string, basePath: string): string {
-	let filepath = destPath;
-	if (basePath) {
-		filepath = path.join(basePath, destPath);
+export function pathFromDestinationToSource(destinationPath: string, basePath?: string): string {
+	let filepath = destinationPath;
+
+	if (basePath !== undefined) {
+		filepath = path.join(basePath, destinationPath);
 	}
 
 	return normalizePath(filepath);
@@ -19,23 +20,24 @@ export function pathFromDestToSource(destPath: string, basePath: string): string
 /**
  * Processing path to the destination directory from source directory
  */
-export function pathFromSourceToDest(sourcePath: string, destPath: string, basePath: string | null): string {
+export function pathFromSourceToDestination(sourcePath: string, destinationPath: string, basePath?: string): string {
 	let filepath = sourcePath;
-	if (basePath) {
+
+	if (basePath !== undefined) {
 		filepath = path.relative(basePath, sourcePath);
 	}
 
-	return normalizePath(path.join(destPath, filepath));
+	return normalizePath(path.join(destinationPath, filepath));
 }
 
 /**
  * Expanding of the directories in path
  */
 export function expandDirectoryTree(filepath: string): string[] {
-	const dirs = filepath.split('/');
-	const tree = [dirs[0]];
+	const directories = filepath.split('/');
+	const tree = [directories[0]];
 
-	dirs.reduce((sum, current) => {
+	directories.reduce((sum, current) => {
 		const next = normalizePath(path.join(sum, current));
 
 		tree.push(next);

@@ -1,31 +1,32 @@
 import * as assert from 'assert';
 
-import LogManager, { ILogEntry } from './log';
-
+import LogManager, { LogEntry } from './log';
 import * as optionsManager from './options';
 
-import { IOptions, IPartialOptions } from './options';
+type Options = optionsManager.Options;
+type PartialOptions = optionsManager.PartialOptions;
 
 class FakeLogger extends LogManager {
-	public lastMessage: string | undefined = undefined;
+	public lastMessage?: string = undefined;
 
 	public log(message: string): void {
 		this.lastMessage = message;
 	}
 }
 
-function getLogger(options?: IPartialOptions): FakeLogger {
-	const preparedOptions: IOptions = optionsManager.prepare(options);
+function getLogger(options?: PartialOptions): FakeLogger {
+	const preparedOptions: Options = optionsManager.prepare(options);
 
 	return new FakeLogger(preparedOptions);
 }
 
-function getLogEntry(entry?: Partial<ILogEntry>): ILogEntry {
-	return Object.assign<ILogEntry, Partial<ILogEntry> | undefined>({
+function getLogEntry(entry?: Partial<LogEntry>): LogEntry {
+	return {
 		action: 'copy',
 		from: 'from',
-		to: 'to'
-	}, entry);
+		to: 'to',
+		...entry
+	};
 }
 
 describe('Managers → Logger', () => {
@@ -41,7 +42,7 @@ describe('Managers → Logger', () => {
 		it('should do nothing when the «verbose» option is disabled', () => {
 			const logger = getLogger({ verbose: false });
 
-			const expected: undefined = undefined;
+			const expected = undefined;
 
 			const logEntry = getLogEntry();
 
@@ -49,13 +50,13 @@ describe('Managers → Logger', () => {
 
 			const actual = logger.lastMessage;
 
-			assert.equal(actual, expected);
+			assert.strictEqual(actual, expected);
 		});
 
 		it('should do use default logger with «copy» action when the «verbose» option is enabled', () => {
 			const logger = getLogger({ verbose: true });
 
-			const expected: string = 'Copying: from -> to';
+			const expected = 'Copying: from -> to';
 
 			const logEntry = getLogEntry();
 
@@ -63,13 +64,13 @@ describe('Managers → Logger', () => {
 
 			const actual = logger.lastMessage;
 
-			assert.equal(actual, expected);
+			assert.strictEqual(actual, expected);
 		});
 
 		it('should do use default logger with «remove» action when the «verbose» option is enabled', () => {
 			const logger = getLogger({ verbose: true });
 
-			const expected: string = 'Removing: from';
+			const expected = 'Removing: from';
 
 			const logEntry = getLogEntry({ action: 'remove' });
 
@@ -77,26 +78,27 @@ describe('Managers → Logger', () => {
 
 			const actual = logger.lastMessage;
 
-			assert.equal(actual, expected);
+			assert.strictEqual(actual, expected);
 		});
 
 		it('should do use custom logger when the «verbose» option is function', () => {
-			let message: string;
+			let message: string | undefined;
 
 			const logger = getLogger({
-				verbose: (entry) => message = entry.action
+				verbose: (entry) => {
+					message = entry.action;
+				}
 			});
 
-			const expected: string = 'copy';
+			const expected = 'copy';
 
 			const logEntry = getLogEntry();
 
 			logger.info(logEntry);
 
-			/* tslint:disable-next-line no-non-null-assertion */
-			const actual = message!;
+			const actual = message;
 
-			assert.equal(actual, expected);
+			assert.strictEqual(actual, expected);
 		});
 	});
 });

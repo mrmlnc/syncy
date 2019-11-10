@@ -7,15 +7,13 @@ import fg = require('fast-glob');
 import globParent = require('glob-parent');
 import minimatch = require('minimatch');
 
+import { Log, LogEntry } from './managers/log';
 import LogManager from './managers/log';
+import { IPartialOptions, Options } from './managers/options';
 import * as optionsManager from './managers/options';
-
+import { Pattern } from './types/patterns';
 import * as fsUtils from './utils/fs';
 import * as pathUtils from './utils/path';
-
-import { ILogEntry, Log } from './managers/log';
-import { IOptions, IPartialOptions } from './managers/options';
-import { Pattern } from './types/patterns';
 
 /**
  * The reason to  not update the file
@@ -52,7 +50,7 @@ export function getSourceEntries(patterns: Pattern | Pattern[]): Promise<string[
 /**
  * Get all the parts of a file path for excluded paths.
  */
-export function getPartsOfExcludedPaths(destFiles: string[], options: IOptions): string[] {
+export function getPartsOfExcludedPaths(destFiles: string[], options: Options): string[] {
 	return options.ignoreInDest
 		.reduce((collection, pattern) => collection.concat(minimatch.match(destFiles, pattern, { dot: true })), [] as string[])
 		.map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base))
@@ -68,7 +66,7 @@ export function getTreeOfBasePaths(patterns: Pattern[]): string[] {
 	}, ['']);
 }
 
-export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: IOptions, log: Log): Promise<void[]> {
+export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: Options, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
 
 	// If destination directory not exists then create it
@@ -107,12 +105,12 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 
 			const pathFromSourceToDest = pathUtils.pathFromSourceToDest(destFile, dest, null);
 			const removePromise = fsUtils.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
-				log(<ILogEntry>{
+				log({
 					action: 'remove',
 					from: destFile,
 					to: undefined
-				});
-			}).catch((err) => {
+				} as LogEntry);
+			}).catch((err: NodeJS.ErrnoException) => {
 				throw new Error(`Cannot remove '${pathFromSourceToDest}': ${err.code}`);
 			});
 
@@ -131,16 +129,16 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 		const copyAction = Promise.all([statFrom, statDest]).then((stat) => {
 			// We should update this file?
 			if (skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
-				return;
+				return undefined;
 			}
 
 			return cpf(from, to).then(() => {
-				log(<ILogEntry>{
-					action: 'copy',
+				log({
 					from,
-					to
+					to,
+					action: 'copy'
 				});
-			}).catch((err) => {
+			}).catch((err: NodeJS.ErrnoException) => {
 				throw new Error(`'${from}' to '${to}': ${err.message}`);
 			});
 		});

@@ -1,7 +1,7 @@
 import { Pattern } from '../types/patterns';
 import { Log } from './log';
 
-export interface IOptions {
+export interface Options {
 	/**
 	 * Display log messages when copying and removing files.
 	 */
@@ -20,15 +20,14 @@ export interface IOptions {
 	ignoreInDest: Pattern[];
 }
 
-export type IPartialOptions = Partial<IOptions>;
+export type IPartialOptions = Partial<Options>;
 
-export function prepare(options?: IPartialOptions): IOptions {
-	const opts = Object.assign<IOptions, IPartialOptions | undefined>({
+export function prepare(options?: IPartialOptions): Options {
+	return {
 		verbose: false,
 		base: '',
 		updateAndDelete: true,
-		ignoreInDest: []
-	}, options);
-
-	return opts;
+		ignoreInDest: [],
+		...options
+	};
 }

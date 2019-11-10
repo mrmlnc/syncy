@@ -11,9 +11,10 @@ npm-debug.log*
 node_modules/
 
 # Compiled and temporary files
+.eslintcache
 .tmp/
-.benchmark/
 out/
+fixtures/
 
 # Other files
 package-lock.json

@@ -2,30 +2,35 @@
 
 import * as fs from 'fs';
 
-import cpf = require('cp-file');
-import fg = require('fast-glob');
-import globParent = require('glob-parent');
-import minimatch = require('minimatch');
+import * as cpf from 'cp-file';
+import * as fg from 'fast-glob';
+import * as minimatch from 'minimatch';
 
-import { Log, LogEntry } from './managers/log';
-import LogManager from './managers/log';
-import { IPartialOptions, Options } from './managers/options';
+import LogManager, { Log } from './managers/log';
 import * as optionsManager from './managers/options';
 import { Pattern } from './types/patterns';
 import * as fsUtils from './utils/fs';
 import * as pathUtils from './utils/path';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import globParent = require('glob-parent');
+
+type Options = optionsManager.Options;
+type PartialOptions = optionsManager.PartialOptions;
+
 /**
  * The reason to  not update the file
  */
-export function skipUpdate(source: fs.Stats, dest: fs.Stats | null, updateAndDelete: boolean): boolean {
-	if (dest && !updateAndDelete) {
+export function skipUpdate(source: fs.Stats, destination: fs.Stats | null, updateAndDelete: boolean): boolean {
+	if (destination !== null && !updateAndDelete) {
 		return true;
 	}
+
 	if (source.isDirectory()) {
 		return true;
 	}
-	if (dest && compareTime(source, dest)) {
+
+	if (destination !== null && compareTime(source, destination)) {
 		return true;
 	}
 
@@ -35,12 +40,12 @@ export function skipUpdate(source: fs.Stats, dest: fs.Stats | null, updateAndDel
 /**
  * Compare update time of two files
  */
-export function compareTime(source: fs.Stats, dest: fs.Stats): boolean {
-	return source.ctime.getTime() < dest.ctime.getTime();
+export function compareTime(source: fs.Stats, destination: fs.Stats): boolean {
+	return source.ctime.getTime() < destination.ctime.getTime();
 }
 
-export function getDestEntries(dest: string): Promise<string[]> {
-	return fg<string>('**', { cwd: dest, dot: true, onlyFiles: false });
+export function getDestinationEntries(destination: string): Promise<string[]> {
+	return fg<string>('**', { cwd: destination, dot: true, onlyFiles: false });
 }
 
 export function getSourceEntries(patterns: Pattern | Pattern[]): Promise<string[]> {
@@ -50,34 +55,34 @@ export function getSourceEntries(patterns: Pattern | Pattern[]): Promise<string[
 /**
  * Get all the parts of a file path for excluded paths.
  */
-export function getPartsOfExcludedPaths(destFiles: string[], options: Options): string[] {
+export function getPartsOfExcludedPaths(destinationFiles: string[], options: Options): string[] {
 	return options.ignoreInDest
-		.reduce((collection, pattern) => collection.concat(minimatch.match(destFiles, pattern, { dot: true })), [] as string[])
-		.map((filepath) => pathUtils.pathFromDestToSource(filepath, options.base))
+		.reduce((collection, pattern) => collection.concat(minimatch.match(destinationFiles, pattern, { dot: true })), [] as string[])
+		.map((filepath) => pathUtils.pathFromDestinationToSource(filepath, options.base))
 		.reduce((collection, filepath) => collection.concat(pathUtils.expandDirectoryTree(filepath)), [] as string[]);
 }
 
 export function getTreeOfBasePaths(patterns: Pattern[]): string[] {
 	return patterns.reduce((collection, pattern) => {
-		const parentDir = globParent(pattern);
-		const treePaths = pathUtils.expandDirectoryTree(parentDir);
+		const parentDirectory = globParent(pattern);
+		const treePaths = pathUtils.expandDirectoryTree(parentDirectory);
 
 		return collection.concat(treePaths);
 	}, ['']);
 }
 
-export async function run(patterns: Pattern[], dest: string, sourceFiles: string[], options: Options, log: Log): Promise<void[]> {
+export async function run(patterns: Pattern[], destination: string, sourceFiles: string[], options: Options, log: Log): Promise<void[]> {
 	const arrayOfPromises: Array<Promise<void>> = [];
 
 	// If destination directory not exists then create it
-	const isExists = await fsUtils.pathExists(dest);
+	const isExists = await fsUtils.pathExists(destination);
 	if (!isExists) {
-		await fsUtils.makeDirectory(dest);
+		await fsUtils.makeDirectory(destination);
 	}
 
 	// Get files from destination directory
-	const destFiles = await getDestEntries(dest);
-	const partsOfExcludedFiles = getPartsOfExcludedPaths(destFiles, options);
+	const destinationFiles = await getDestinationEntries(destination);
+	const partsOfExcludedFiles = getPartsOfExcludedPaths(destinationFiles, options);
 
 	// Removing files from the destination directory
 	if (options.updateAndDelete) {
@@ -86,14 +91,14 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 		const fullSourcePaths = sourceFiles.concat(treeOfBasePaths, partsOfExcludedFiles);
 
 		// Deleting files
-		for (const destFile of destFiles) {
+		for (const destinationFile of destinationFiles) {
 			// To files in the source directory are added paths to basic directories
-			const pathFromDestToSource = pathUtils.pathFromDestToSource(destFile, options.base);
+			const pathFromDestinationToSource = pathUtils.pathFromDestinationToSource(destinationFile, options.base);
 
 			// Search unique files to the destination directory
 			let skipIteration = false;
 			for (const fullSourcePath of fullSourcePaths) {
-				if (fullSourcePath.indexOf(pathFromDestToSource) !== -1) {
+				if (fullSourcePath.includes(pathFromDestinationToSource)) {
 					skipIteration = true;
 					break;
 				}
@@ -103,15 +108,15 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 				continue;
 			}
 
-			const pathFromSourceToDest = pathUtils.pathFromSourceToDest(destFile, dest, null);
-			const removePromise = fsUtils.removeFile(pathFromSourceToDest, { disableGlob: true }).then(() => {
+			const pathFromSourceToDestination = pathUtils.pathFromSourceToDestination(destinationFile, destination);
+			const removePromise = fsUtils.removeFile(pathFromSourceToDestination, { disableGlob: true }).then(() => {
 				log({
 					action: 'remove',
-					from: destFile,
+					from: destinationFile,
 					to: undefined
-				} as LogEntry);
-			}).catch((err: NodeJS.ErrnoException) => {
-				throw new Error(`Cannot remove '${pathFromSourceToDest}': ${err.code}`);
+				});
+			}).catch((error) => {
+				throw new Error(`Cannot remove '${pathFromSourceToDestination}': ${error.code}`);
 			});
 
 			arrayOfPromises.push(removePromise);
@@ -120,13 +125,13 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 
 	// Copying files
 	for (const from of sourceFiles) {
-		const to = pathUtils.pathFromSourceToDest(from, dest, options.base);
+		const to = pathUtils.pathFromSourceToDestination(from, destination, options.base);
 
 		// Get stats for source & dest file
 		const statFrom = fsUtils.statFile(from);
-		const statDest = fsUtils.statFile(to).catch(() => null);
+		const statDestination = fsUtils.statFile(to).catch(() => null);
 
-		const copyAction = Promise.all([statFrom, statDest]).then((stat) => {
+		const copyAction = Promise.all([statFrom, statDestination]).then((stat) => {
 			// We should update this file?
 			if (skipUpdate(stat[0], stat[1], options.updateAndDelete)) {
 				return undefined;
@@ -138,8 +143,8 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 					to,
 					action: 'copy'
 				});
-			}).catch((err: NodeJS.ErrnoException) => {
-				throw new Error(`'${from}' to '${to}': ${err.message}`);
+			}).catch((error) => {
+				throw new Error(`'${from}' to '${to}': ${error.message}`);
 			});
 		});
 
@@ -149,16 +154,16 @@ export async function run(patterns: Pattern[], dest: string, sourceFiles: string
 	return Promise.all(arrayOfPromises);
 }
 
-export default async function syncy(source: Pattern | Pattern[], dest: string | string[], opts?: IPartialOptions): Promise<void[][]> {
+export default async function syncy(source: Pattern | Pattern[], destination: string | string[], options?: PartialOptions): Promise<void[][]> {
 	const patterns = ([] as Pattern[]).concat(source);
-	const destination = ([] as string[]).concat(dest);
+	const destinations = ([] as string[]).concat(destination);
 
-	const options = optionsManager.prepare(opts);
+	const preparedOptions = optionsManager.prepare(options);
 
-	const logManager = new LogManager(options);
+	const logManager = new LogManager(preparedOptions);
 	const logger = logManager.info.bind(logManager);
 
 	return getSourceEntries(source).then((sourceFiles) => {
-		return Promise.all(destination.map((item) => run(patterns, item, sourceFiles, options, logger)));
+		return Promise.all(destinations.map((item) => run(patterns, item, sourceFiles, preparedOptions, logger)));
 	});
 }

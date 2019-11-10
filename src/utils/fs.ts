@@ -7,17 +7,15 @@ import * as rimraf from 'rimraf';
 
 export function pathExists(filepath: string): Promise<boolean> {
 	return new Promise((resolve) => {
-		fs.access(filepath, (err) => {
-			resolve(!err);
-		});
+		fs.access(filepath, (error) => resolve(error === null));
 	});
 }
 
 export function statFile(filepath: string): Promise<fs.Stats> {
 	return new Promise((resolve, reject) => {
-		fs.stat(filepath, (err, stats) => {
-			if (err) {
-				return reject(err);
+		fs.stat(filepath, (error, stats) => {
+			if (error !== null) {
+				return reject(error);
 			}
 
 			resolve(stats);
@@ -27,9 +25,9 @@ export function statFile(filepath: string): Promise<fs.Stats> {
 
 export function makeDirectory(filepath: string): Promise<void> {
 	return new Promise((resolve, reject) => {
-		mkpath(filepath, (err) => {
-			if (err) {
-				return reject(err);
+		mkpath(filepath, (error) => {
+			if (error !== null) {
+				return reject(error);
 			}
 
 			resolve();
@@ -39,9 +37,9 @@ export function makeDirectory(filepath: string): Promise<void> {
 
 export function removeFile(filepath: string, options: rimraf.Options): Promise<void> {
 	return new Promise((resolve, reject) => {
-		rimraf(filepath, options, (err) => {
-			if (err) {
-				return reject(err);
+		rimraf(filepath, options, (error) => {
+			if (error !== null) {
+				return reject(error);
 			}
 
 			resolve();

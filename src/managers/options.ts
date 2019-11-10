@@ -1,7 +1,7 @@
 import { Pattern } from '../types/patterns';
 import { Log } from './log';
 
-export interface Options {
+export type Options = {
 	/**
 	 * Display log messages when copying and removing files.
 	 */
@@ -18,11 +18,11 @@ export interface Options {
 	 * Never remove specified files from destination directory.
 	 */
 	ignoreInDest: Pattern[];
-}
+};
 
-export type IPartialOptions = Partial<Options>;
+export type PartialOptions = Partial<Options>;
 
-export function prepare(options?: IPartialOptions): Options {
+export function prepare(options?: PartialOptions): Options {
 	return {
 		verbose: false,
 		base: '',

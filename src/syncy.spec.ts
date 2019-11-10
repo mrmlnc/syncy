@@ -7,6 +7,7 @@ import * as util from 'util';
 
 import * as cpf from 'cp-file';
 import * as recursiveReaddir from 'recursive-readdir';
+import { Stats } from '@nodelib/fs.macchiato';
 
 import * as fsUtils from './utils/fs';
 
@@ -21,16 +22,20 @@ const readFile = util.promisify(fs.readFile);
 async function createFiles(filepath: string, count: number): Promise<void> {
 	await fsUtils.makeDirectory(filepath);
 
+	const promises: Array<Promise<unknown>> = [];
+
 	for (let i = 0; i < count; i++) {
-		await writeFile(path.join(filepath, `test-${i}.txt`), 'test');
+		promises.push(writeFile(path.join(filepath, `test-${i}.txt`), 'test'));
 	}
+
+	await Promise.all(promises);
 }
 
 // Look ma, it's cp -R
-async function copyRecursive(source: string, dest: string): Promise<void> {
+async function copyRecursive(source: string, destination: string): Promise<void> {
 	const files = await recursiveReaddir(source);
 
-	const promises = files.map((filepath: string) => cpf(filepath, path.join(dest, filepath)));
+	const promises = files.map((filepath: string) => cpf(filepath, path.join(destination, filepath)));
 
 	await Promise.all(promises);
 }
@@ -38,69 +43,85 @@ async function copyRecursive(source: string, dest: string): Promise<void> {
 describe('Syncy', () => {
 	describe('.compareTime', () => {
 		it('should return true if second date bigger then first', () => {
-			assert.ok(compareTime({ ctime: new Date(10 * 1000) } as fs.Stats, { ctime: new Date(100 * 1000) } as fs.Stats));
+			const left = new Stats({
+				ctime: new Date(10 * 1000)
+			});
+
+			const right = new Stats({
+				ctime: new Date(100 * 1000)
+			});
+
+			assert.ok(compareTime(left, right));
 		});
 
 		it('should return false is first date bigger then second', () => {
-			assert.ok(!compareTime({ ctime: new Date(100 * 1000) } as fs.Stats, { ctime: new Date(10 * 1000) } as fs.Stats));
+			const left = new Stats({
+				ctime: new Date(10 * 1000)
+			});
+
+			const right = new Stats({
+				ctime: new Date(10 * 1000)
+			});
+
+			assert.ok(!compareTime(left, right));
 		});
 	});
 
 	describe('.skipUpdate', () => {
 		it('should return true if source is directory', () => {
-			const source = {
-				isDirectory: () => true
-			} as fs.Stats;
+			const source = new Stats({
+				isDirectory: true
+			});
 
-			const dest = {} as fs.Stats;
+			const destination = new Stats();
 
-			assert.ok(skipUpdate(source, dest, true /* updateAndDelete */));
+			assert.ok(skipUpdate(source, destination, true /* updateAndDelete */));
 		});
 
 		it('should return false if dest is outdated', () => {
-			const source = {
-				isDirectory: () => false,
+			const source = new Stats({
+				isDirectory: false,
 				ctime: new Date(100 * 1000)
-			} as fs.Stats;
+			});
 
-			const dest = {
+			const destination = new Stats({
 				ctime: new Date(10 * 1000)
-			} as fs.Stats;
+			});
 
-			assert.ok(!skipUpdate(source, dest, true /* updateAndDelete */));
+			assert.ok(!skipUpdate(source, destination, true /* updateAndDelete */));
 		});
 
 		it('should return true if «updateAndDelete» is disabled', () => {
-			const source = {} as fs.Stats;
-			const dest = {} as fs.Stats;
+			const source = new Stats();
+			const destination = new Stats();
 
-			assert.ok(skipUpdate(source, dest, false /* updateAndDelete */));
+			assert.ok(skipUpdate(source, destination, false /* updateAndDelete */));
 		});
 
 		it('should return true if «updateAndDelete» is enabled and dest is up-to-date', () => {
-			const source = {
-				isDirectory: () => false,
+			const source = new Stats({
+				isDirectory: false,
 				ctime: new Date(10 * 1000)
-			} as fs.Stats;
+			});
 
-			const dest = {
+			const destination = new Stats({
 				ctime: new Date(100 * 1000)
-			} as fs.Stats;
+			});
 
-			assert.ok(skipUpdate(source, dest, true /* updateAndDelete */));
+			assert.ok(skipUpdate(source, destination, true /* updateAndDelete */));
 		});
 
 		it('should return true if dest is up-to-date', () => {
-			const source = {
-				isDirectory: () => false,
+			const source = new Stats({
+				isDirectory: false,
 				ctime: new Date(10 * 1000)
-			} as fs.Stats;
+			});
 
-			const dest = {
+			const destination = new Stats({
 				ctime: new Date(100 * 1000)
-			} as fs.Stats;
+			});
 
-			assert.ok(skipUpdate(source, dest, true /* updateAndDelete */));
+			assert.ok(skipUpdate(source, destination, true /* updateAndDelete */));
 		});
 	});
 
@@ -117,7 +138,7 @@ describe('Syncy', () => {
 			return syncy('fixtures/**/*', '.tmp/basic-1')
 				.then(() => recursiveReaddir('.tmp/basic-1'))
 				.then((result) => {
-					assert.equal(result.length, 8);
+					assert.strictEqual(result.length, 8);
 				});
 		});
 
@@ -125,7 +146,7 @@ describe('Syncy', () => {
 			return syncy('fixtures/**', '.tmp/basic-2', { base: 'fixtures' })
 				.then(() => recursiveReaddir('.tmp/basic-2'))
 				.then((result) => {
-					assert.equal(result.length, 8);
+					assert.strictEqual(result.length, 8);
 				});
 		});
 
@@ -134,7 +155,7 @@ describe('Syncy', () => {
 				.then(() => syncy('fixtures/**', '.tmp/basic-3'))
 				.then(() => recursiveReaddir('.tmp/basic-3'))
 				.then((result) => {
-					assert.equal(result.length, 8);
+					assert.strictEqual(result.length, 8);
 				});
 		});
 
@@ -143,7 +164,7 @@ describe('Syncy', () => {
 				.then(() => syncy('fixtures/**', '.tmp/basic-4'))
 				.then(() => recursiveReaddir('.tmp/basic-4'))
 				.then((result) => {
-					assert.equal(result.length, 8);
+					assert.strictEqual(result.length, 8);
 				});
 		});
 	});
@@ -156,7 +177,7 @@ describe('Syncy', () => {
 				.then(() => syncy('fixtures/**', '.tmp/updating-0'))
 				.then(() => recursiveReaddir('.tmp/updating-0'))
 				.then((result) => {
-					assert.equal(result.length, 8);
+					assert.strictEqual(result.length, 8);
 				});
 		});
 
@@ -169,7 +190,7 @@ describe('Syncy', () => {
 				.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-1'))
 				.then(() => recursiveReaddir('.tmp/updating-1'))
 				.then((result) => {
-					assert.equal(result.length, 7);
+					assert.strictEqual(result.length, 7);
 				});
 		});
 
@@ -182,7 +203,7 @@ describe('Syncy', () => {
 				.then(() => syncy('.tmp/fixtures-backup/**/*.txt', '.tmp/updating-2'))
 				.then(() => recursiveReaddir('.tmp/updating-2'))
 				.then((result) => {
-					assert.equal(result.length, 7);
+					assert.strictEqual(result.length, 7);
 				});
 		});
 
@@ -194,7 +215,7 @@ describe('Syncy', () => {
 				.then(() => syncy('.tmp/fixtures-backup/**', '.tmp/updating-3', { base: '.tmp/fixtures-backup/fixtures' }))
 				.then(() => readFile('.tmp/updating-3/folder-2/test.txt', 'utf-8'))
 				.then((data) => {
-					assert.equal(data, 'test');
+					assert.strictEqual(data, 'test');
 				});
 		});
 
@@ -204,11 +225,12 @@ describe('Syncy', () => {
 				.then(() => recursiveReaddir('.tmp/updating-4'))
 				.then((result) => {
 					// File `test-2.txt` overwritten
-					assert.equal(result.length, 10);
+					assert.strictEqual(result.length, 10);
 				});
 		});
 	});
 
+	// eslint-disable-next-line mocha/no-skipped-tests
 	describe.skip('Console information', () => {
 		it('console-0: Verbose (true)', () => {
 			// Hook for console output
@@ -220,17 +242,19 @@ describe('Syncy', () => {
 
 			return syncy('fixtures/**', '.tmp/console-0', { verbose: true }).then(() => {
 				console.log = clgDump;
-				assert.equal(/fixtures\/test-2.txt/.test(stdout), true);
+				assert.strictEqual(/fixtures\/test-2.txt/.test(stdout), true);
 			});
 		});
 
 		it('console-1: Verbose (function)', () => {
 			let lastAction = '';
 
-			const verbose = (log: LogEntry) => lastAction = log.action;
+			const verbose = (log: LogEntry): void => {
+				lastAction = log.action;
+			};
 
 			return syncy('fixtures/**', '.tmp/console-1', { verbose }).then(() => {
-				assert.equal(lastAction, 'copy');
+				assert.strictEqual(lastAction, 'copy');
 			});
 		});
 	});
@@ -241,7 +265,7 @@ describe('Syncy', () => {
 				.then(() => syncy('fixtures/**', '.tmp/ignore-0', { ignoreInDest: ['**/test-0.txt'] }))
 				.then(() => recursiveReaddir('.tmp/ignore-0'))
 				.then((result) => {
-					assert.equal(result.length, 9);
+					assert.strictEqual(result.length, 9);
 				});
 		});
 
@@ -250,7 +274,7 @@ describe('Syncy', () => {
 				.then(() => syncy('fixtures/**', '.tmp/ignore-1', { ignoreInDest: ['**/*.txt'] }))
 				.then(() => recursiveReaddir('.tmp/ignore-1'))
 				.then((result) => {
-					assert.equal(result.length, 9);
+					assert.strictEqual(result.length, 9);
 				});
 		});
 
@@ -262,7 +286,7 @@ describe('Syncy', () => {
 				.then(() => syncy('fixtures/**', '.tmp/ignore-2', { base: 'fixtures', ignoreInDest: ['one/**/*', 'two/**/*'] }))
 				.then(() => recursiveReaddir('.tmp/ignore-2'))
 				.then((result) => {
-					assert.equal(result.length, 10);
+					assert.strictEqual(result.length, 10);
 				});
 		});
 	});
@@ -275,7 +299,7 @@ describe('Syncy', () => {
 					recursiveReaddir('.tmp/multiple-0-two')
 				]))
 				.then((result) => {
-					assert.equal(result[0].length + result[1].length, 16);
+					assert.strictEqual(result[0].length + result[1].length, 16);
 				});
 		});
 
@@ -292,7 +316,7 @@ describe('Syncy', () => {
 					recursiveReaddir('.tmp/multiple-1-two')
 				]))
 				.then((result) => {
-					assert.equal(result[0].length + result[1].length, 16);
+					assert.strictEqual(result[0].length + result[1].length, 16);
 				});
 		});
 	});

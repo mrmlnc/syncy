@@ -1,15 +1,15 @@
 import { Options } from './options';
 
-export interface LogEntry {
+export type LogEntry = {
 	action: 'copy' | 'remove';
 	from: string;
 	to?: string;
-}
+};
 
 export type Log = (entry: LogEntry) => void;
 
 export default class LogManager {
-	private _logger: Log;
+	private readonly _logger: Log;
 
 	constructor(private readonly _options: Options) {
 		this._logger = this._getLogger();
@@ -27,6 +27,7 @@ export default class LogManager {
 		if (this._options.verbose === true) {
 			return this._defaultLogger;
 		}
+
 		if (typeof this._options.verbose === 'function') {
 			return this._options.verbose;
 		}

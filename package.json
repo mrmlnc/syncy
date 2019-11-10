@@ -9,7 +9,7 @@
     "url": "https://mrmlnc.com"
   },
   "engines": {
-    "node": ">=4.0.0"
+    "node": ">=8.0.0"
   },
   "main": "index.js",
   "typings": "./out/syncy.d.ts",

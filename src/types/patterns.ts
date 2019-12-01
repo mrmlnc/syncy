@@ -1,1 +1,0 @@
-export type Pattern = string;

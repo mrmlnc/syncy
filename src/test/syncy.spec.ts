@@ -35,6 +35,36 @@ async function copyRecursive(source: string, dest: string) {
 
 describe('Basic tests', () => {
 
+	it('should throw an error when the patterns is an empty string', () => {
+		return syncy('', '')
+			.then(() => {
+				throw new Error('wow!');
+			})
+			.catch((error) => {
+				assert.strictEqual(error.toString(), 'TypeError: patterns must be a glob-pattern. See https://github.com/isaacs/node-glob#glob-primer');
+			});
+	});
+
+	it('should throw an error when the dest is an empty string', () => {
+		return syncy('test/**', '')
+			.then(() => {
+				throw new Error('wow!');
+			})
+			.catch((error) => {
+				assert.strictEqual(error.toString(), 'TypeError: dest must be a string or an array of strings');
+			});
+	});
+
+	it('should throw an error when the dest is an array of an empty strings', () => {
+		return syncy('test/**', [''])
+			.then(() => {
+				throw new Error('wow!');
+			})
+			.catch((error) => {
+				assert.strictEqual(error.toString(), 'TypeError: dest must be a string or an array of strings');
+			});
+	});
+
 	it('basic-0: Should create destination directory if it does not exist.', () => {
 		return syncy('test/**/*', '.tmp/basic-0').then(() => {
 			return io.pathExists('.tmp/basic-0').then((status) => {

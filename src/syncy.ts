@@ -67,7 +67,7 @@ function assertPatternsInput(patterns: string[], dest: string): void {
 	}
 
 	for (let i = 0; i < patterns.length; i++) {
-		if (typeof patterns[i] !== 'string' || !isGlob(patterns[i])) {
+		if (typeof patterns[i] !== 'string' || !isGlob(patterns[i]) || !patterns[i]) {
 			throw new TypeError('patterns must be a glob-pattern. See https://github.com/isaacs/node-glob#glob-primer');
 		}
 	}

@@ -9,7 +9,7 @@
     "url": "canonium.com"
   },
   "engines": {
-    "node": ">=4.0.0"
+    "node": ">=8.0.0"
   },
   "typings": "./out/syncy.d.ts",
   "devDependencies": {

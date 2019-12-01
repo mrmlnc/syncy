@@ -1,6 +1,6 @@
 {
   "name": "syncy",
-  "version": "2.2.2",
+  "version": "3.0.0",
   "description": "One-way synchronization of directories with glob",
   "license": "MIT",
   "repository": "mrmlnc/syncy",
